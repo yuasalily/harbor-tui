@@ -30,10 +30,8 @@
 			},
 			"extensions": [
 				"golang.Go",
-				"windmilleng.vscode-go-autotest",
-				"RomanPeshkov.go-test-outline"
+				"windmilleng.vscode-go-autotest"
 			]
 		}
 	}
-
 }
