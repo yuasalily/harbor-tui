@@ -6,7 +6,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/docker/docker/client"
+	"github.com/yuasalily/harbor-tui/internal/docker"
 )
 
 type DockerChecker func(ctx context.Context) (version string, platform string, err error)
@@ -100,21 +100,9 @@ func (m Model) checkDockerCmd() tea.Cmd {
 }
 
 func defaultDockerChecker(ctx context.Context) (string, string, error) {
-	cli, err := client.NewClientWithOpts(
-		client.FromEnv,
-		client.WithAPIVersionNegotiation(),
-	)
+	info, err := docker.Info(ctx)
 	if err != nil {
 		return "", "", err
 	}
-	defer cli.Close()
-
-	if _, err := cli.Ping(ctx); err != nil {
-		return "", "", err
-	}
-	ver, err := cli.ServerVersion(ctx)
-	if err != nil {
-		return "", "", err
-	}
-	return ver.Version, ver.Os, nil
+	return info.Version, info.OS, nil
 }
