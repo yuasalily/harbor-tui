@@ -6,10 +6,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/yuasalily/harbor-tui/internal/docker"
 )
-
-type DockerChecker func(ctx context.Context) (version string, platform string, err error)
 
 type Model struct {
 	witdh, height int
@@ -20,26 +17,15 @@ type Model struct {
 	serverVersion  string
 	daemonPlatform string
 
-	dockerChecker DockerChecker
+	api DockerAPI
 }
 
-// 関数型オプションパターン
-type Option func(*Model)
-
-func WithDockerChecker(c DockerChecker) Option {
-	return func(m *Model) { m.dockerChecker = c }
-}
-
-func New(opts ...Option) Model {
-	m := Model{dockerChecker: defaultDockerChecker}
-	for _, o := range opts {
-		o(&m)
-	}
-	return m
+func New(api DockerAPI) Model {
+	return Model{api: api}
 }
 
 // Bubble Tea ライフサイクル
-func (m Model) Init() tea.Cmd { return m.checkDockerCmd() }
+func (m Model) Init() tea.Cmd { return m.fetchDaemonInfoCmd() }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -50,13 +36,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		m.witdh, m.height = msg.Width, msg.Height
-	case dockerStatusMsg:
-		m.dockerOK = msg.ok
-		m.serverVersion = msg.version
-		m.daemonPlatform = msg.platform
+	case daemonInfoMsg:
 		if msg.err != nil {
 			m.dockerErr = msg.err.Error()
+			m.dockerOK = false
+			return m, nil
 		}
+		m.dockerOK = true
+		m.serverVersion = msg.version
+		m.daemonPlatform = msg.platform
 	}
 	return m, nil
 }
@@ -80,29 +68,20 @@ func (m Model) View() string {
 	`, status, info)
 }
 
-type dockerStatusMsg struct {
-	ok       bool
+type daemonInfoMsg struct {
 	version  string
 	platform string
 	err      error
 }
 
-func (m Model) checkDockerCmd() tea.Cmd {
+func (m Model) fetchDaemonInfoCmd() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		ver, plat, err := m.dockerChecker(ctx)
+		info, err := m.api.Info(ctx)
 		if err != nil {
-			return dockerStatusMsg{ok: false, err: err}
+			return daemonInfoMsg{err: err}
 		}
-		return dockerStatusMsg{ok: true, version: ver, platform: plat}
+		return daemonInfoMsg{version: info.Version, platform: info.OS}
 	}
-}
-
-func defaultDockerChecker(ctx context.Context) (string, string, error) {
-	info, err := docker.Info(ctx)
-	if err != nil {
-		return "", "", err
-	}
-	return info.Version, info.OS, nil
 }
