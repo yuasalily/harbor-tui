@@ -3,12 +3,10 @@ package app
 import (
 	"context"
 	"time"
-
-	"github.com/yuasalily/harbor-tui/internal/docker"
 )
 
 type DockerAPI interface {
-	Info(ctx context.Context) (docker.DaemonInfo, error)
+	Info(ctx context.Context) (DaemonInfo, error)
 	ImagesList(ctx context.Context, opts ImagesListOptions) ([]ImageSummary, error)
 }
 
