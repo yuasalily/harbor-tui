@@ -11,7 +11,7 @@ import (
 	"github.com/containerd/errdefs"
 )
 
-func TestPingAndVersion_OK(t *testing.T) {
+func TestInfo_OK(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/_ping"):
@@ -20,8 +20,9 @@ func TestPingAndVersion_OK(t *testing.T) {
 		case strings.HasSuffix(r.URL.Path, "/version"):
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"Version": "27.2.0",
-				"Os":      "linux",
+				"Version":    "27.2.0",
+				"Os":         "linux",
+				"ApiVersion": "1.47",
 			})
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -32,16 +33,16 @@ func TestPingAndVersion_OK(t *testing.T) {
 	sdk := newSDKClient(t, srv)
 	cli := &Client{cli: sdk}
 
-	ver, plat, err := cli.PingAndVersion(context.Background())
+	info, err := cli.Info(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if ver != "27.2.0" || plat != "linux" {
-		t.Fatalf("unexpected values: version=%s platform=%s", ver, plat)
+	if info.Version != "27.2.0" || info.OS != "linux" || info.APIVersion != "1.47" {
+		t.Fatalf("unexpected info: %#v", info)
 	}
 }
 
-func TestPingAndVersion_PingError(t *testing.T) {
+func TestInfo_PingError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/_ping") {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -52,7 +53,7 @@ func TestPingAndVersion_PingError(t *testing.T) {
 
 	sdk := newSDKClient(t, srv)
 	cli := &Client{cli: sdk}
-	_, _, err := cli.PingAndVersion(context.Background())
+	_, err := cli.Info(context.Background())
 
 	if err == nil {
 		t.Fatalf("expected error, got nil")

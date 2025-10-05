@@ -1,8 +1,6 @@
 package docker
 
 import (
-	"context"
-
 	"github.com/docker/docker/client"
 )
 
@@ -23,14 +21,3 @@ func New() (*Client, error) {
 }
 
 func (c *Client) Close() error { return c.cli.Close() }
-
-func (c *Client) PingAndVersion(ctx context.Context) (version string, platform string, err error) {
-	if _, err = c.cli.Ping(ctx); err != nil {
-		return "", "", err
-	}
-	ver, err := c.cli.ServerVersion(ctx)
-	if err != nil {
-		return "", "", err
-	}
-	return ver.Version, ver.Os, nil
-}
