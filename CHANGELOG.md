@@ -1,3 +1,6 @@
+## 0.0.11
+- internal/app/cmds/info.goのテストを忘れていたので追加
+
 ## 0.0.10
 - バージョンやOSなどのCmdを分離
 - packege整理
