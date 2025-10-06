@@ -6,21 +6,22 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/yuasalily/harbor-tui/internal/app/ports"
 )
 
 type fakeAPI struct {
-	info DaemonInfo
+	info ports.DaemonInfo
 	err  error
 }
 
-func (f *fakeAPI) Info(ctx context.Context) (DaemonInfo, error) {
+func (f *fakeAPI) Info(ctx context.Context) (ports.DaemonInfo, error) {
 	if f.err != nil {
-		return DaemonInfo{}, f.err
+		return ports.DaemonInfo{}, f.err
 	}
 	return f.info, nil
 }
 
-func (f *fakeAPI) ImagesList(ctx context.Context, opts ImagesListOptions) ([]ImageSummary, error) {
+func (f *fakeAPI) ImagesList(ctx context.Context, opts ports.ImagesListOptions) ([]ports.ImageSummary, error) {
 	return nil, errors.New("not implemented in this test")
 }
 
@@ -37,7 +38,7 @@ func TestQuitKey(t *testing.T) {
 }
 
 func TestInitFetchesDaemonInfo_OK(t *testing.T) {
-	api := &fakeAPI{info: DaemonInfo{Version: "27.2.0", OS: "linux"}}
+	api := &fakeAPI{info: ports.DaemonInfo{Version: "27.2.0", OS: "linux"}}
 	m := New(api)
 	msg := m.Init()()
 	updated, _ := m.Update(msg)
