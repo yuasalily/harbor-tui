@@ -1,7 +1,6 @@
 package cmds
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -9,24 +8,8 @@ import (
 	"github.com/yuasalily/harbor-tui/internal/app/ports"
 )
 
-type fakeAPI struct {
-	info ports.DaemonInfo
-	err  error
-}
-
-func (f *fakeAPI) Info(ctx context.Context) (ports.DaemonInfo, error) {
-	if f.err != nil {
-		return ports.DaemonInfo{}, f.err
-	}
-	return f.info, nil
-}
-
-func (f *fakeAPI) ImagesList(ctx context.Context, opts ports.ImagesListOptions) ([]ports.ImageSummary, error) {
-	return nil, errors.New("not used in this test")
-}
-
 func TestFetchDaemonInfoCmd_OK(t *testing.T) {
-	api := &fakeAPI{info: ports.DaemonInfo{Version: "27.2.0", OS: "linux"}}
+	api := NewFakeAPI(WithInfo(ports.DaemonInfo{Version: "27.2.0", OS: "linux"}))
 	cmd := FetchDaemonInfoCmd(api, time.Second)
 	msg := cmd()
 	m := msg.(DaemonInfoMsg)
@@ -36,7 +19,7 @@ func TestFetchDaemonInfoCmd_OK(t *testing.T) {
 }
 
 func TestFetchDaemonInfoCmd_Error(t *testing.T) {
-	api := &fakeAPI{err: errors.New("boom")}
+	api := NewFakeAPI(WithError(errors.New("boom")))
 	cmd := FetchDaemonInfoCmd(api, time.Second)
 	msg := cmd()
 	m := msg.(DaemonInfoMsg)
