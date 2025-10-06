@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/yuasalily/harbor-tui/internal/adapters/dockeradapter"
 	"github.com/yuasalily/harbor-tui/internal/app"
+	"github.com/yuasalily/harbor-tui/internal/app/ports"
 	"github.com/yuasalily/harbor-tui/internal/docker"
 )
 
@@ -15,7 +16,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer cli.Close()
-	api := dockeradapter.New(cli)
+	var api ports.DockerAPI = dockeradapter.New(cli)
 	m := app.New(api)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {

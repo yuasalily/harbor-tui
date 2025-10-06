@@ -3,7 +3,7 @@ package dockeradapter
 import (
 	"context"
 
-	"github.com/yuasalily/harbor-tui/internal/app"
+	"github.com/yuasalily/harbor-tui/internal/app/ports"
 	"github.com/yuasalily/harbor-tui/internal/docker"
 )
 
@@ -26,15 +26,15 @@ func NewFromEnv() (*Adapter, error) {
 	return &Adapter{c: cli}, nil
 }
 
-func (a *Adapter) Info(ctx context.Context) (app.DaemonInfo, error) {
+func (a *Adapter) Info(ctx context.Context) (ports.DaemonInfo, error) {
 	info, err := a.c.Info(ctx)
 	if err != nil {
-		return app.DaemonInfo{}, err
+		return ports.DaemonInfo{}, err
 	}
-	return app.DaemonInfo{Version: info.Version, OS: info.OS, APIVersion: info.APIVersion}, nil
+	return ports.DaemonInfo{Version: info.Version, OS: info.OS, APIVersion: info.APIVersion}, nil
 }
 
-func (a *Adapter) ImagesList(ctx context.Context, opts app.ImagesListOptions) ([]app.ImageSummary, error) {
+func (a *Adapter) ImagesList(ctx context.Context, opts ports.ImagesListOptions) ([]ports.ImageSummary, error) {
 	imgs, err := a.c.ImagesList(ctx, docker.ImagesListOptions{
 		All:       opts.All,
 		Dangling:  opts.Dangling,
@@ -43,9 +43,9 @@ func (a *Adapter) ImagesList(ctx context.Context, opts app.ImagesListOptions) ([
 	if err != nil {
 		return nil, err
 	}
-	out := make([]app.ImageSummary, 0, len(imgs))
+	out := make([]ports.ImageSummary, 0, len(imgs))
 	for _, it := range imgs {
-		out = append(out, app.ImageSummary{
+		out = append(out, ports.ImageSummary{
 			ID:        it.ID,
 			RepoTags:  it.RepoTags,
 			Size:      it.Size,

@@ -1,11 +1,12 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/yuasalily/harbor-tui/internal/app/cmds"
+	"github.com/yuasalily/harbor-tui/internal/app/ports"
 )
 
 type Model struct {
@@ -17,15 +18,15 @@ type Model struct {
 	serverVersion  string
 	daemonPlatform string
 
-	api DockerAPI
+	api ports.DockerAPI
 }
 
-func New(api DockerAPI) Model {
+func New(api ports.DockerAPI) Model {
 	return Model{api: api}
 }
 
 // Bubble Tea ライフサイクル
-func (m Model) Init() tea.Cmd { return m.fetchDaemonInfoCmd() }
+func (m Model) Init() tea.Cmd { return cmds.FetchDaemonInfoCmd(m.api, 3*time.Second) }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -36,15 +37,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		m.witdh, m.height = msg.Width, msg.Height
-	case daemonInfoMsg:
-		if msg.err != nil {
-			m.dockerErr = msg.err.Error()
+	case cmds.DaemonInfoMsg:
+		if msg.Err != nil {
+			m.dockerErr = msg.Err.Error()
 			m.dockerOK = false
 			return m, nil
 		}
 		m.dockerOK = true
-		m.serverVersion = msg.version
-		m.daemonPlatform = msg.platform
+		m.serverVersion = msg.Info.Version
+		m.daemonPlatform = msg.Info.OS
 	}
 	return m, nil
 }
@@ -66,22 +67,4 @@ func (m Model) View() string {
 
 	Press 'q' to quit.
 	`, status, info)
-}
-
-type daemonInfoMsg struct {
-	version  string
-	platform string
-	err      error
-}
-
-func (m Model) fetchDaemonInfoCmd() tea.Cmd {
-	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		info, err := m.api.Info(ctx)
-		if err != nil {
-			return daemonInfoMsg{err: err}
-		}
-		return daemonInfoMsg{version: info.Version, platform: info.OS}
-	}
 }
