@@ -5,13 +5,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/yuasalily/harbor-tui/internal/app/cmds"
 	"github.com/yuasalily/harbor-tui/internal/app/ports"
+	"github.com/yuasalily/harbor-tui/internal/ui/components"
+	"github.com/yuasalily/harbor-tui/internal/ui/views"
+)
+
+type Page int
+
+const (
+	PageInfo Page = iota
+	PageImages
 )
 
 type Model struct {
 	witdh, height int
+	page          Page
 
 	// Docker
 	dockerOK       bool
@@ -20,12 +31,16 @@ type Model struct {
 	daemonPlatform string
 
 	images []ports.ImageSummary
+	tbl    table.Model
 
 	api ports.DockerAPI
 }
 
 func New(api ports.DockerAPI) Model {
-	return Model{api: api}
+	m := Model{api: api}
+	cols := views.ImageColumns(80)
+	m.tbl = components.NewTable(cols, 12, true)
+	return m
 }
 
 // Bubble Tea ライフサイクル
@@ -37,11 +52,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "1":
+			m.page = PageInfo
+			return m, nil
+		case "2":
+			m.page = PageImages
+			return m, nil
+		case "tab":
+			if m.page == PageInfo {
+				m.page = PageImages
+			} else {
+				m.page = PageInfo
+			}
+			return m, nil
 		case "i":
-			return m, cmds.FetchImagesCmd(m.api, ports.ImagesListOptions{All: true}, 5*time.Second)
+			if m.page == PageImages {
+				return m, cmds.FetchImagesCmd(m.api, ports.ImagesListOptions{All: true}, 5*time.Second)
+			}
+			return m, nil
+		case "j", "down":
+			if m.page == PageImages {
+				m.tbl.MoveDown(1)
+			}
+			return m, nil
+		case "k", "up":
+			if m.page == PageImages {
+				m.tbl.MoveUp(1)
+			}
+			return m, nil
 		}
 	case tea.WindowSizeMsg:
 		m.witdh, m.height = msg.Width, msg.Height
+		cols := views.ImageColumns(m.witdh - 6)
+		m.tbl.SetColumns(cols)
+		h := max(m.height-10, 5)
+		m.tbl.SetHeight(h)
 	case cmds.DaemonInfoMsg:
 		if msg.Err != nil {
 			m.dockerErr = msg.Err.Error()
@@ -58,89 +103,49 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.dockerErr = ""
 		m.images = msg.Items
+		views.ApplyImages(&m.tbl, m.images)
 	}
 	return m, nil
 }
 
 func (m Model) View() string {
-	lines := []string{
-		"",
-		"  Harbor-TUI: Bubble Tea + Docker SDK",
-		"",
-	}
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf(`
+	Harbor-TUI: Bubble Tea + Docker SDK
 
-	status := "NOT CONNECTED"
-	info := ""
-	if m.dockerOK {
-		status = "CONNECTED"
-		info = fmt.Sprintf("Docker %s (%s)", m.serverVersion, m.daemonPlatform)
-	} else if m.dockerErr != "" {
-		info = fmt.Sprintf("error: %s", m.dockerErr)
-	}
-	lines = append(lines,
-		fmt.Sprintf("  Status: %s", status),
-		fmt.Sprintf("  %s", info),
-		"",
-		"  [Keys] q: quit   i:fetch images",
-		"",
-	)
-	lines = append(lines, m.renderImagesSection()...)
+	%s
+	`, m.renderTabs()))
 
-	return strings.Join(lines, "\n")
-}
-
-func (m Model) renderImagesSection() []string {
-	out := []string{"  Images:"}
-	count := len(m.images)
-	out = append(out, fmt.Sprintf("  - total: %d", count))
-	if count == 0 {
-		out = append(out, "  (press 'i' to load images)")
-		return out
-	}
-
-	const maxRows = 10
-	rows := count
-	if rows > maxRows {
-		rows = maxRows
-	}
-	out = append(out, "")
-	out = append(out, "  ID (short)       Tags                           Size     Created")
-	out = append(out, "  ----------------  -----------------------------  -------  ------------")
-	for i := 0; i < rows; i++ {
-		it := m.images[i]
-		id := shortID(it.ID)
-		tags := "<none>"
-		if len(it.RepoTags) > 0 {
-			tags = it.RepoTags[0]
+	switch m.page {
+	case PageInfo:
+		status := "NOT CONNECTED"
+		info := ""
+		if m.dockerOK {
+			status = "CONNECTED"
+			info = fmt.Sprintf("Docker %s (%s)", m.serverVersion, m.daemonPlatform)
+		} else if m.dockerErr != "" {
+			info = fmt.Sprintf("error: %s", m.dockerErr)
 		}
-		size := humanBytes(it.Size)
-		created := it.CreatedAt.Local().Format("2006-01-02 15:04")
-		out = append(out, fmt.Sprintf("  %-17s  %-30s  %7s  %s", id, tags, size, created))
+		b.WriteString(views.RenderInfo(status, info))
+		b.WriteString("  [Keys] q: quit   1: info   2: images   tab: switch\n")
+	case PageImages:
+		b.WriteString(fmt.Sprintf(`
+  Images:
+  -  total: %d
+
+%s
+
+  [Keys] q: quit   1: info   2: images   tab: switch
+		`, len(m.images), views.RenderIndented(m.tbl, "  ")))
 	}
-	if count > rows {
-		out = append(out, fmt.Sprintf("  ... and %d more", count-rows))
-	}
-	return out
+	return b.String()
 }
 
-func shortID(id string) string {
-	if len(id) > 12 {
-		return id[:12]
+func (m Model) renderTabs() string {
+	active := func(name string) string { return "[" + name + "]" }
+	inactive := func(name string) string { return " " + name + " " }
+	if m.page == PageInfo {
+		return "  " + active("Info") + "  " + inactive("Images")
 	}
-	return id
-}
-
-func humanBytes(n int64) string {
-	const unit = 1024
-	if n < unit {
-		return fmt.Sprintf("%dB", n)
-	}
-	div, exp := int64(unit), 0
-	for n >= unit && exp < 4 {
-		n /= unit
-		div *= unit
-		exp++
-	}
-	suffix := []string{"KB", "MB", "GB", "TB"}[exp-1]
-	return fmt.Sprintf("%d%s", n, suffix)
+	return "  " + inactive("Info") + "  " + active("Images")
 }
