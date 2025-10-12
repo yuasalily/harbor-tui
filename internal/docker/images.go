@@ -30,7 +30,7 @@ func (c *Client) ImagesList(ctx context.Context, opts ImagesListOptions) ([]Imag
 		args.Add("dangling", strconv.FormatBool(*opts.Dangling))
 	}
 	if opts.Reference != "" {
-		args.Add("refenrece", opts.Reference)
+		args.Add("reference", opts.Reference)
 	}
 
 	listOpts := image.ListOptions{All: opts.All, Filters: args}
