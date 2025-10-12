@@ -68,7 +68,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			}
 			if m.Core.Page == core.PageImages {
-				m.Tbl.MoveDown(1)
+				m.Tbl.MoveUp(1)
 			}
 			return m, nil
 		}
