@@ -18,7 +18,7 @@ func ImageColumns(totalWidth int) []table.Column {
 	mergin := 3
 
 	fixed := idWidth + sizeWidth + createdWidth + mergin
-	tagWidth := max(totalWidth - fixed, 20)
+	tagWidth := max(totalWidth-fixed, 20)
 	return []table.Column{
 		{Title: "ID", Width: idWidth},
 		{Title: "TAG", Width: tagWidth},
@@ -44,7 +44,7 @@ func ApplyImages(t *table.Model, images []ports.ImageSummary) {
 	t.SetRows(rows)
 }
 
-func RenderIndented(t table.Model, indent string) string {
+func RenderImages(t table.Model, indent string) string {
 	var b strings.Builder
 	for ln := range strings.SplitSeq(t.View(), "\n") {
 		b.WriteString(indent)
@@ -68,7 +68,7 @@ func humanBytes(n int64) string {
 		return fmt.Sprintf("%dB", n)
 	}
 	div, exp := unit, 0
-	for v := float64(n) / unit; v>= unit && exp < 4; v/= unit {
+	for v := float64(n) / unit; v >= unit && exp < 4; v /= unit {
 		div *= unit
 		exp++
 	}

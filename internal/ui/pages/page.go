@@ -1,0 +1,11 @@
+package pages
+
+import tea "github.com/charmbracelet/bubbletea"
+
+type Page interface {
+	Name() string
+	Init() tea.Cmd
+	Update(tea.Msg) (Page, tea.Cmd)
+	View() string
+	SetSize(w, h int)
+}
