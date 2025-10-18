@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -18,24 +20,34 @@ type Model struct {
 	Nav  list.Model
 	Keys GlobalKeyMap
 
-	pages []pages.Page
-	idx   int // 現在ページ
+	pages   map[pages.ID]pages.Page
+	current pages.ID // 現在ページ
 }
 
 func New(core *core.Core) Model {
 	ov := poverview.New(core)
 	im := pimages.New(core)
-	items := []string{ov.Name(), im.Name()}
+
+	pageMap := map[pages.ID]pages.Page{
+		pages.PageOverview: ov,
+		pages.PageImages:   im,
+	}
+
+	var items []string
+	for _, id := range pages.All() {
+		items = append(items, id.Title())
+	}
+
 	return Model{
-		Core:  core,
-		Nav:   components.NewSidebar(items, 20, 12),
-		Keys:  NewGlobalKeyMap(),
-		pages: []pages.Page{ov, im},
-		idx:   0,
+		Core:    core,
+		Nav:     components.NewSidebar(items, 20, 12),
+		Keys:    NewGlobalKeyMap(),
+		pages:   pageMap,
+		current: pages.PageOverview,
 	}
 }
 
-func (m Model) Init() tea.Cmd { return m.pages[m.idx].Init() }
+func (m Model) Init() tea.Cmd { return m.currentPage().Init() }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch x := msg.(type) {
@@ -45,7 +57,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case key.Matches(x, m.Keys.Select):
 			m.applySidebarSelection()
-			return m, m.pages[m.idx].Init()
+			return m, m.currentPage().Init()
 		}
 		var cmd tea.Cmd
 		m.Nav, cmd = m.Nav.Update(x)
@@ -58,8 +70,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	p, cmd := m.pages[m.idx].Update(msg)
-	m.pages[m.idx] = p
+	p, cmd := m.currentPage().Update(msg)
+	m.pages[m.current] = p
 	return m, cmd
 }
 
@@ -68,12 +80,15 @@ func (m *Model) applySidebarSelection() {
 		return
 	}
 	title := m.Nav.SelectedItem().FilterValue()
-	for i, p := range m.pages {
-		if p.Name() == title {
-			m.idx = i
-			break
-		}
+	m.current = pages.FromTitle(title)
+}
+
+func (m Model) currentPage() pages.Page {
+	p, ok := m.pages[m.current]
+	if !ok {
+		panic(fmt.Sprintf("no page instance for id=%d", m.current))
 	}
+	return p
 }
 
 var (
@@ -83,7 +98,6 @@ var (
 
 func (m Model) View() string {
 	left := leftStyle.Render(m.Nav.View())
-	right := rightStyle.Render(m.pages[m.idx].View())
+	right := rightStyle.Render(m.currentPage().View())
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 }
-
