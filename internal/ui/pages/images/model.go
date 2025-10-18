@@ -18,8 +18,18 @@ type Model struct {
 	core *core.Core
 	W, H int
 
-	Tbl  table.Model
-	Keys KeyMap
+	Tbl     table.Model
+	Keys    KeyMap
+	focused bool
+}
+
+func (m *Model) SetFocused(f bool) {
+	m.focused = f
+	if f {
+		m.Tbl.Focus()
+	} else {
+		m.Tbl.Blur()
+	}
 }
 
 func New(core *core.Core) *Model {
@@ -44,6 +54,10 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 	switch x := msg.(type) {
 	case tea.KeyMsg:
+		// フォーカスがないときは無視
+		if !m.focused {
+			return m, nil
+		}
 		switch {
 		case key.Matches(x, m.Keys.Down):
 			m.Tbl.MoveDown(1)

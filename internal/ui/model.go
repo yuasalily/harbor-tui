@@ -18,11 +18,14 @@ import (
 type Model struct {
 	Core *core.Core
 	W, H int
-	Nav  list.Model
-	Keys GlobalKeyMap
+
+	Nav   list.Model
+	Keys  GlobalKeyMap
+	focus FocusArea
 
 	pages   map[pages.ID]pages.Page
 	current pages.ID // 現在ページ
+
 }
 
 func New(core *core.Core) Model {
@@ -45,6 +48,7 @@ func New(core *core.Core) Model {
 		Core:    core,
 		Nav:     components.NewSidebar(items, 20, 12),
 		Keys:    NewGlobalKeyMap(),
+		focus:   FocusNav,
 		pages:   pageMap,
 		current: pages.PageOverview,
 	}
@@ -58,13 +62,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(x, m.Keys.Quit):
 			return m, tea.Quit
+		case x.String() == "tab":
+			if m.focus == FocusNav {
+				m.focus = FocusPage
+				if f, ok := m.currentPage().(pages.Focusable); ok {
+					f.SetFocused(true)
+				}
+				return m, nil
+			}
+			if f, ok := m.currentPage().(pages.Focusable); ok {
+				f.SetFocused(false)
+			}
+			m.focus = FocusNav
+			return m, nil
 		case key.Matches(x, m.Keys.Select):
 			m.applySidebarSelection()
 			return m, m.currentPage().Init()
 		}
-		var cmd tea.Cmd
-		m.Nav, cmd = m.Nav.Update(x)
-		return m, cmd
+		if m.focus == FocusNav {
+			var cmd tea.Cmd
+			m.Nav, cmd = m.Nav.Update(x)
+			return m, cmd
+		}
 
 	case tea.WindowSizeMsg:
 		m.W, m.H = x.Width, x.Height
