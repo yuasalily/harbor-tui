@@ -8,3 +8,7 @@ type Page interface {
 	View() string
 	SetSize(w, h int)
 }
+
+type Focusable interface {
+	SetFocused(focused bool)
+}
