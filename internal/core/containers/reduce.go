@@ -12,6 +12,8 @@ func (s *State) Reduce(msg tea.Msg) bool {
 			s.Err = x.Err.Error()
 			return true
 		}
+		s.Err = ""
+		s.List = x.Items
 	}
 	return false
 }
