@@ -34,8 +34,8 @@ func New(core *core.Core) Model {
 	}
 
 	var items []string
-	for _, id := range pages.All() {
-		items = append(items, id.Title())
+	for _, meta := range pages.Metas() {
+		items = append(items, meta.Title)
 	}
 
 	return Model{
