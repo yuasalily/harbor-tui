@@ -13,6 +13,7 @@ import (
 type fakeClient struct {
 	info docker.DaemonInfo
 	imgs []docker.ImageSummary
+	cts  []docker.ContainerSummary
 	err  error
 }
 
@@ -28,6 +29,13 @@ func (f *fakeClient) ImagesList(ctx context.Context, opts docker.ImagesListOptio
 		return nil, f.err
 	}
 	return f.imgs, nil
+}
+
+func (f *fakeClient) ContainersList(ctx context.Context, opts docker.ContainersListOptions) ([]docker.ContainerSummary, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.cts, nil
 }
 
 func TestAdapter_Info_OK(t *testing.T) {
