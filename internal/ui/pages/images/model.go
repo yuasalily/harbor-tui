@@ -31,8 +31,6 @@ func New(core *core.Core) *Model {
 	}
 }
 
-func (m *Model) Name() string { return "Images" }
-
 func (m *Model) SetSize(w, h int) {
 	m.W, m.H = w, h
 	m.Tbl.SetColumns(views.ImageColumns(m.W - 6))

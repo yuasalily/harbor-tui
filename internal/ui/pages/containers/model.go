@@ -31,7 +31,6 @@ func New(core *core.Core) *Model {
 	}
 }
 
-func (m *Model) Name() string { return "Containers" }
 func (m *Model) SetSize(w, h int) {
 	m.W, m.H = w, h
 	m.Tbl.SetColumns(views.ContainerColumns(m.W - 6))

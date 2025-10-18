@@ -17,7 +17,6 @@ type Model struct {
 
 func New(core *core.Core) *Model { return &Model{core: core} }
 
-func (m *Model) Name() string     { return "Overview" }
 func (m *Model) SetSize(w, h int) { m.W, m.H = w, h }
 func (m *Model) Init() tea.Cmd    { return cmds.FetchDaemonInfoCmd(m.core.API, 0) }
 func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
