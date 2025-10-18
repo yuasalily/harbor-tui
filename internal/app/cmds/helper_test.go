@@ -9,6 +9,7 @@ import (
 type fakeAPI struct {
 	info ports.DaemonInfo
 	imgs []ports.ImageSummary
+	cts  []ports.ContainerSummary
 	err  error
 }
 
@@ -21,6 +22,10 @@ func WithInfo(info ports.DaemonInfo) Option {
 
 func WithImages(imgs []ports.ImageSummary) Option {
 	return func(f *fakeAPI) { f.imgs = imgs }
+}
+
+func WithContainers(cts []ports.ContainerSummary) Option {
+	return func(f *fakeAPI) { f.cts = cts }
 }
 
 func WithError(err error) Option {
@@ -47,4 +52,11 @@ func (f *fakeAPI) ImagesList(ctx context.Context, opts ports.ImagesListOptions) 
 		return nil, f.err
 	}
 	return f.imgs, nil
+}
+
+func (f *fakeAPI) ContainersList(ctx context.Context, opts ports.ContainersListOptions) ([]ports.ContainerSummary, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.cts, nil
 }

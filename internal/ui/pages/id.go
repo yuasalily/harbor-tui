@@ -5,6 +5,7 @@ type ID int
 const (
 	PageOverview ID = iota
 	PageImages
+	PageContainers
 )
 
 type Meta struct {
@@ -17,6 +18,7 @@ func Metas() []Meta {
 	return []Meta{
 		{PageOverview, "Overview", "1"},
 		{PageImages, "Images", "2"},
+		{PageContainers, "Containers", "3"},
 	}
 }
 

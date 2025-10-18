@@ -10,6 +10,7 @@ import (
 	"github.com/yuasalily/harbor-tui/internal/core"
 	"github.com/yuasalily/harbor-tui/internal/ui/components"
 	"github.com/yuasalily/harbor-tui/internal/ui/pages"
+	pcontainers "github.com/yuasalily/harbor-tui/internal/ui/pages/containers"
 	pimages "github.com/yuasalily/harbor-tui/internal/ui/pages/images"
 	poverview "github.com/yuasalily/harbor-tui/internal/ui/pages/overview"
 )
@@ -27,10 +28,12 @@ type Model struct {
 func New(core *core.Core) Model {
 	ov := poverview.New(core)
 	im := pimages.New(core)
+	ct := pcontainers.New(core)
 
 	pageMap := map[pages.ID]pages.Page{
-		pages.PageOverview: ov,
-		pages.PageImages:   im,
+		pages.PageOverview:   ov,
+		pages.PageImages:     im,
+		pages.PageContainers: ct,
 	}
 
 	var items []string

@@ -10,6 +10,7 @@ import (
 type dockerClient interface {
 	Info(ctx context.Context) (docker.DaemonInfo, error)
 	ImagesList(ctx context.Context, opts docker.ImagesListOptions) ([]docker.ImageSummary, error)
+	ContainersList(ctx context.Context, opts docker.ContainersListOptions) ([]docker.ContainerSummary, error)
 }
 
 type Adapter struct {
@@ -49,6 +50,29 @@ func (a *Adapter) ImagesList(ctx context.Context, opts ports.ImagesListOptions) 
 			ID:        it.ID,
 			RepoTags:  it.RepoTags,
 			Size:      it.Size,
+			CreatedAt: it.CreatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (a *Adapter) ContainersList(ctx context.Context, opts ports.ContainersListOptions) ([]ports.ContainerSummary, error) {
+	items, err := a.c.ContainersList(ctx, docker.ContainersListOptions{
+		All:    opts.All,
+		Name:   opts.Name,
+		Status: opts.Status,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ports.ContainerSummary, 0, len(items))
+	for _, it := range items {
+		out = append(out, ports.ContainerSummary{
+			ID:        it.ID,
+			Names:     it.Names,
+			Image:     it.Image,
+			State:     it.State,
+			Status:    it.Status,
 			CreatedAt: it.CreatedAt,
 		})
 	}
