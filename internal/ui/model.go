@@ -87,9 +87,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.W, m.H = x.Width, x.Height
+
+		navW := m.Nav.Width()
+
+		const panePad = 4
+
+		rightW := max(m.W-navW-panePad, 20)
+
+		m.Nav.SetSize(navW, m.H-2)
+
 		for _, p := range m.pages {
-			p.SetSize(m.W, m.H)
+			p.SetSize(rightW, m.H)
 		}
+		return m, nil
 	}
 
 	p, cmd := m.currentPage().Update(msg)
