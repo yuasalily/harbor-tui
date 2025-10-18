@@ -33,9 +33,13 @@ func New(core *core.Core) *Model {
 
 func (m *Model) SetSize(w, h int) {
 	m.W, m.H = w, h
-	m.Tbl.SetColumns(views.ContainerColumns(m.W - 6))
-	m.Tbl.SetHeight(max(m.H-10, 5))
+	inner := max(w-2, 20)
+	m.Tbl.SetColumns(views.ContainerColumns(inner))
+
+	tableH := max(m.H-6, 5)
+	m.Tbl.SetHeight(tableH)
 }
+
 func (m *Model) Init() tea.Cmd {
 	return cmds.FetchContainersCmd(m.core.API, m.core.Containers.Filter, 0)
 }
