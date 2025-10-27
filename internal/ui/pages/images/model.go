@@ -38,6 +38,7 @@ func New(core *core.Core) *Model {
 		core: core,
 		Tbl:  components.NewTable(cols, 12, true),
 		Keys: NewKeyMap(),
+		focused: false,
 	}
 }
 

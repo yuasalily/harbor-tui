@@ -18,16 +18,27 @@ type Model struct {
 	core *core.Core
 	W, H int
 
-	Tbl  table.Model
-	Keys KeyMap
+	Tbl     table.Model
+	Keys    KeyMap
+	focused bool
 }
 
 func New(core *core.Core) *Model {
 	cols := views.ContainerColumns(80)
 	return &Model{
-		core: core,
-		Tbl:  components.NewTable(cols, 12, true),
-		Keys: NewKeyMap(),
+		core:    core,
+		Tbl:     components.NewTable(cols, 12, true),
+		Keys:    NewKeyMap(),
+		focused: false,
+	}
+}
+
+func (m *Model) SetFocused(f bool) {
+	m.focused = f
+	if f {
+		m.Tbl.Focus()
+	} else {
+		m.Tbl.Blur()
 	}
 }
 

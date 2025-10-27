@@ -11,7 +11,7 @@ type KeyMap struct {
 
 func NewKeyMap() KeyMap {
 	return KeyMap{
-		Up:  key.NewBinding(
+		Up: key.NewBinding(
 			key.WithKeys("up"),
 			key.WithHelp("↑", "up"),
 		),
@@ -29,3 +29,6 @@ func NewKeyMap() KeyMap {
 		),
 	}
 }
+
+func (k KeyMap) Short() []key.Binding { return []key.Binding{k.Up, k.Down, k.Refresh, k.Delete} }
+

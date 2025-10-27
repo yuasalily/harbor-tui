@@ -30,3 +30,9 @@ func NewKeyMap() KeyMap {
 		),
 	}
 }
+
+func (k KeyMap) Short() []key.Binding {
+	return []key.Binding{k.Up, k.Down, k.Refresh, k.Logs, k.Remove}
+}
+
+
