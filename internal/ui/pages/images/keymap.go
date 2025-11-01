@@ -30,7 +30,7 @@ func NewKeyMap() KeyMap {
 		),
 		Delete: key.NewBinding(
 			key.WithKeys("d"),
-			key.WithHelp("d", "delete image"),
+			key.WithHelp("d", "delete selected"),
 		),
 	}
 }

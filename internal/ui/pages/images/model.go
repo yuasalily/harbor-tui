@@ -131,12 +131,6 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 			for id := range m.selectedIDs {
 				refs = append(refs, id)
 			}
-			if len(refs) == 0 {
-				idx := m.Tbl.Cursor()
-				if idx >= 0 && idx < len(m.core.Images.List) {
-					refs = []string{m.core.Images.List[idx].ID}
-				}
-			}
 			if len(refs) > 0 {
 				return m, func() tea.Msg {
 					return uidialog.OpenConfirmDialogMsg{
