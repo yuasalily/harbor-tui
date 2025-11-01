@@ -28,6 +28,7 @@ type Model struct {
 
 	pages   map[pages.ID]pages.Page
 	current pages.ID // 現在ページ
+	navSel  int      // サイドバーの選択インデックス
 	dialog  uidialog.Model
 }
 
@@ -55,6 +56,7 @@ func New(core *core.Core) Model {
 		focus:   FocusNav,
 		pages:   pageMap,
 		current: pages.PageOverview,
+		navSel:  0,
 		dialog:  uidialog.Model{},
 	}
 }
@@ -65,6 +67,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch x := msg.(type) {
 	case tea.KeyMsg:
 		switch {
+		// ダイアログ表示中はダイアログにキーを移譲
 		case m.focus == FocusDialog:
 			dlg, cmd := m.dialog.Update(x)
 			m.dialog = dlg
@@ -74,25 +77,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		case key.Matches(x, m.Keys.Quit):
 			return m, tea.Quit
-		case key.Matches(x, m.Keys.Select):
-			if m.focus == FocusNav {
-				m.applySidebarSelection()
-				return m, m.currentPage().Init()
-			}
 		case key.Matches(x, m.Keys.Tab):
 			m.toggleFocus()
 			return m, nil
 		}
-		for _, meta := range pages.Metas() {
-			if x.String() == meta.Key {
-				m.setCurrent(meta.ID)
-				m.focus = FocusNav
-				return m, m.currentPage().Init()
-			}
-		}
 		if m.focus == FocusNav {
+			prev := m.Nav.Index()
 			var cmd tea.Cmd
 			m.Nav, cmd = m.Nav.Update(x)
+			if m.Nav.Index() != prev {
+				m.navSel = m.Nav.Index()
+				m.applySidebarSelection()
+				return m, m.currentPage().Init()
+			}
 			return m, cmd
 		}
 	case tea.WindowSizeMsg:
