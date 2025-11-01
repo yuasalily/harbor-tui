@@ -25,6 +25,7 @@ type Model struct {
 
 	confirming    bool
 	pendingDelete []string
+	selectedIDs   map[string]struct{}
 }
 
 func (m *Model) SetFocused(f bool) {
@@ -39,10 +40,11 @@ func (m *Model) SetFocused(f bool) {
 func New(core *core.Core) *Model {
 	cols := views.ImageColumns(80)
 	return &Model{
-		core:    core,
-		Tbl:     components.NewTable(cols, 12, true),
-		Keys:    NewKeyMap(),
-		focused: false,
+		core:        core,
+		Tbl:         components.NewTable(cols, 12, true),
+		Keys:        NewKeyMap(),
+		focused:     false,
+		selectedIDs: map[string]struct{}{},
 	}
 }
 
@@ -57,6 +59,54 @@ func (m *Model) SetSize(w, h int) {
 
 func (m *Model) Init() tea.Cmd {
 	return cmds.FetchImagesCmd(m.core.API, m.core.Images.Filter, 0)
+}
+
+func (m *Model) toggleSelectAtCursor() {
+	idx := m.Tbl.Cursor()
+	if idx < 0 || idx >= len(m.core.Images.List) {
+		return
+	}
+	id := m.core.Images.List[idx].ID
+	if _, ok := m.selectedIDs[id]; ok {
+		delete(m.selectedIDs, id)
+	} else {
+		m.selectedIDs[id] = struct{}{}
+	}
+	m.decorateSelectionOnRows()
+}
+
+func (m *Model) decorateSelectionOnRows() {
+	// TAG列(index=1)の先頭に[*]/[ ]を付与
+	rows := m.Tbl.Rows()
+	for i := range rows {
+		if i >= len(m.core.Images.List) {
+			continue
+		}
+		id := m.core.Images.List[i].ID
+		mark := "[ ] "
+		if _, ok := m.selectedIDs[id]; ok {
+			mark = "[*] "
+		}
+		tag := rows[i][1]
+		if strings.HasPrefix(tag, "[*] ") || strings.HasPrefix(tag, "[ ] ") {
+			tag = tag[4:]
+		}
+		rows[i][1] = mark + tag
+	}
+	m.Tbl.SetRows(rows)
+}
+
+func (m *Model) pruneSelectionToCurrentList() {
+	if len(m.selectedIDs) == 0 {
+		return
+	}
+	next := make(map[string]struct{}, len(m.selectedIDs))
+	for _, it := range m.core.Images.List {
+		if _, ok := m.selectedIDs[it.ID]; ok {
+			next[it.ID] = struct{}{}
+		}
+	}
+	m.selectedIDs = next
 }
 
 func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
@@ -89,13 +139,24 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 		case key.Matches(x, m.Keys.Up):
 			m.Tbl.MoveUp(1)
 			return m, nil
+		case key.Matches(x, m.Keys.Toggle):
+			m.toggleSelectAtCursor()
+			return m, nil
 		case key.Matches(x, m.Keys.Refresh):
 			return m, m.Init()
 		case key.Matches(x, m.Keys.Delete):
-			idx := m.Tbl.Cursor()
-			if idx >= 0 && idx < len(m.core.Images.List) {
-				ref := m.core.Images.List[idx].ID
-				m.pendingDelete = []string{ref}
+			refs := make([]string, 0, len(m.selectedIDs))
+			for id := range m.selectedIDs {
+				refs = append(refs, id)
+			}
+			if len(refs) == 0 {
+				idx := m.Tbl.Cursor()
+				if idx >= 0 && idx < len(m.core.Images.List) {
+					refs = []string{m.core.Images.List[idx].ID}
+				}
+			}
+			if len(refs) > 0 {
+				m.pendingDelete = refs
 				m.confirming = true
 			}
 			return m, nil
@@ -105,7 +166,10 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 		switch msg.(type) {
 		case cmds.ImagesListedMsg:
 			views.ApplyImages(&m.Tbl, m.core.Images.List)
+			m.pruneSelectionToCurrentList()
+			m.decorateSelectionOnRows()
 		case cmds.ImagesDeletedMsg:
+			m.selectedIDs = map[string]struct{}{}
 			return m, m.Init()
 		}
 	}
@@ -114,7 +178,11 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 
 func (m *Model) View() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("  Images:\n  - total: %d\n\n", len(m.core.Images.List)))
+	b.WriteString(fmt.Sprintf("  Images:\n  - total: %d\n", len(m.core.Images.List)))
+	if n:=len(m.selectedIDs);n>0{
+		b.WriteString(fmt.Sprintf("  - seleted: %d\n", n))
+	}
+	b.WriteString("\n")
 	b.WriteString(views.RenderImages(m.Tbl, "  "))
 	if m.confirming {
 		n := len(m.pendingDelete)
