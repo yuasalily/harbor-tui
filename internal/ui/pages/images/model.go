@@ -1,12 +1,12 @@
 package images
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/yuasalily/harbor-tui/internal/app/cmds"
 	"github.com/yuasalily/harbor-tui/internal/app/ports"
 	"github.com/yuasalily/harbor-tui/internal/core"
@@ -178,23 +178,18 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 
 func (m *Model) View() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("  Images:\n  - total: %d\n", len(m.core.Images.List)))
-	if n := len(m.selectedIDs); n > 0 {
-		b.WriteString(fmt.Sprintf("  - seleted: %d\n", n))
-	}
-	b.WriteString("\n")
+	b.WriteString("  Images\n\n")
 	b.WriteString(views.RenderImages(m.Tbl, "  "))
 	if m.confirming {
-		n := len(m.pendingDelete)
-		title := "Confirm deletion"
-		msg := "Delete the selected image(s)?"
-		if n > 1 {
-			msg = fmt.Sprintf("Delete %d images?", n)
-		}
-		hint := "y: confirm    n: cancel"
+		title := "Delete images"
+		msg := "This will remove the selected images(s)."
+		hint := "[y] Delete  /  [n]: Cancel"
 
-		boxWidth := max(m.W-6, 24)
-		dialog := components.RenderDialog(boxWidth, title, msg, hint)
+		avail := max(m.W-6, 20)
+		boxWidth := max(36, min(64, avail)) // 36 - 64の範囲でクランプ
+
+		danger := lipgloss.Color("204") // light red
+		dialog := components.RenderDialog(boxWidth, title, msg, hint, danger)
 
 		leftPad := "  "
 		dialog = indentLines(dialog, leftPad)
