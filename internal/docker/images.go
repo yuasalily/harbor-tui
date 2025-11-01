@@ -23,6 +23,11 @@ type ImagesListOptions struct {
 	Reference string
 }
 
+type ImageRemoveOptions struct {
+	Force         bool
+	PruneChildlen bool
+}
+
 // Dockerデーモンからイメージ一覧を取得してDTOに変換
 func (c *Client) ImagesList(ctx context.Context, opts ImagesListOptions) ([]ImageSummary, error) {
 	args := filters.NewArgs()
@@ -42,11 +47,19 @@ func (c *Client) ImagesList(ctx context.Context, opts ImagesListOptions) ([]Imag
 	res := make([]ImageSummary, 0, len(imgs))
 	for _, it := range imgs {
 		res = append(res, ImageSummary{
-			ID: it.ID,
-			RepoTags: it.RepoTags,
-			Size: it.Size,
+			ID:        it.ID,
+			RepoTags:  it.RepoTags,
+			Size:      it.Size,
 			CreatedAt: time.Unix(it.Created, 0),
 		})
 	}
 	return res, nil
+}
+
+func (c *Client) ImageRemove(ctx context.Context, ref string, opts ImageRemoveOptions) error {
+	_, err := c.cli.ImageRemove(ctx, ref, image.RemoveOptions{
+		Force:         opts.Force,
+		PruneChildren: opts.PruneChildlen,
+	})
+	return err
 }

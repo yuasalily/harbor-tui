@@ -60,3 +60,10 @@ func (f *fakeAPI) ContainersList(ctx context.Context, opts ports.ContainersListO
 	}
 	return f.cts, nil
 }
+
+func (f *fakeAPI) ImageRemove(ctx context.Context, ref string, opts ports.ImageRemoveOptions) error {
+	if f.err != nil {
+		return f.err
+	}
+	return nil
+}

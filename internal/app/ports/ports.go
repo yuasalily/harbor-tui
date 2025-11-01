@@ -9,6 +9,7 @@ type DockerAPI interface {
 	Info(ctx context.Context) (DaemonInfo, error)
 	ImagesList(ctx context.Context, opts ImagesListOptions) ([]ImageSummary, error)
 	ContainersList(ctx context.Context, opts ContainersListOptions) ([]ContainerSummary, error)
+	ImageRemove(ctx context.Context, ref string, opts ImageRemoveOptions) error
 }
 
 type DaemonInfo struct {
@@ -28,6 +29,11 @@ type ImagesListOptions struct {
 	All       bool  //中間イメージを含む
 	Dangling  *bool // nil=未指定, true/falseをfiltersに渡す
 	Reference string
+}
+
+type ImageRemoveOptions struct {
+	Force bool
+	PruneChildlen bool
 }
 
 type ContainerSummary struct {

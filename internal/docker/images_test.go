@@ -76,3 +76,35 @@ func TestImagesList_ServerError(t *testing.T) {
 		t.Fatalf("exptected Internal Server Error, got %v", err)
 	}
 }
+
+func TestImageRemove_OK(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "images/remove") {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	sdk := newSDKClient(t, srv)
+	cli := &Client{cli: sdk}
+	if err := cli.ImageRemove(context.Background(), "sha256:abc", ImageRemoveOptions{}); err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestImageRemove_ServerError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "images/remove") {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	sdk := newSDKClient(t, srv)
+	cli := &Client{cli: sdk}
+	if err := cli.ImageRemove(context.Background(), "sha256:abc", ImageRemoveOptions{}); err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}
