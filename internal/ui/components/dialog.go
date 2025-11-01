@@ -9,13 +9,14 @@ import (
 var (
 	dialogTitleStyle = lipgloss.NewStyle().Bold(true)
 	dialogBoxStyle   = lipgloss.NewStyle().
-				Padding(1, 2).MarginTop(1).
+				Padding(1, 2).
+				MarginTop(1).
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("212"))
+				BorderForeground(lipgloss.Color("244"))
 	dialogHintStyle = lipgloss.NewStyle().Faint(true)
 )
 
-func RenderDialog(w int, title, body, hint string) string {
+func RenderDialog(w int, title, body, hint string, borderColr lipgloss.TerminalColor) string {
 	if w < 20 {
 		w = 20
 	}
@@ -41,7 +42,11 @@ func RenderDialog(w int, title, body, hint string) string {
 		}
 	}
 	content = strings.Join(lines, "\n")
-	return dialogBoxStyle.Width(w).Render(content)
+	box := dialogBoxStyle
+	if borderColr != nil {
+		box = box.BorderForeground(borderColr)
+	}
+	return box.Width(w).Render(content)
 }
 
 func runeCount(s string) int { return lipgloss.Width(s) }
