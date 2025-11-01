@@ -9,6 +9,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/yuasalily/harbor-tui/internal/core"
 	"github.com/yuasalily/harbor-tui/internal/ui/components"
+
+	uidialog "github.com/yuasalily/harbor-tui/internal/ui/dialog"
 	"github.com/yuasalily/harbor-tui/internal/ui/pages"
 	pcontainers "github.com/yuasalily/harbor-tui/internal/ui/pages/containers"
 	pimages "github.com/yuasalily/harbor-tui/internal/ui/pages/images"
@@ -26,7 +28,7 @@ type Model struct {
 
 	pages   map[pages.ID]pages.Page
 	current pages.ID // 現在ページ
-
+	dialog  uidialog.Model
 }
 
 func New(core *core.Core) Model {
@@ -53,6 +55,7 @@ func New(core *core.Core) Model {
 		focus:   FocusNav,
 		pages:   pageMap,
 		current: pages.PageOverview,
+		dialog:  uidialog.Model{},
 	}
 }
 
@@ -62,6 +65,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch x := msg.(type) {
 	case tea.KeyMsg:
 		switch {
+		case m.focus == FocusDialog:
+			dlg, cmd := m.dialog.Update(x)
+			m.dialog = dlg
+			if !m.dialog.Visible {
+				m.focus = FocusPage
+			}
+			return m, cmd
 		case key.Matches(x, m.Keys.Quit):
 			return m, tea.Quit
 		case key.Matches(x, m.Keys.Select):
@@ -100,7 +110,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for _, p := range m.pages {
 			p.SetSize(rightW, pageInnerH)
 		}
+		m.dialog.SetSize(rightW, pageInnerH)
 		return m, nil
+	case uidialog.OpenConfirmDialogMsg:
+		m.dialog.OpenConfirm(x.Title, x.Body, x.Hint, lipgloss.Color("204"), x.Payload)
+		if f, ok := m.currentPage().(pages.Focusable); ok {
+			f.SetFocused(false)
+		}
+		m.focus = FocusDialog
+		return m, nil
+	case uidialog.DialogResultMsg:
+		// ページに結果メッセージを渡す
 	}
 
 	p, cmd := m.currentPage().Update(msg)
@@ -169,14 +189,18 @@ func (m Model) View() string {
 	}
 
 	var help string
-	if m.focus == FocusNav {
+	switch m.focus {
+	case FocusNav:
 		help = m.helpbar.Render(m.Keys.ShortForNav())
-	} else {
+	case FocusPage:
 		help = m.helpbar.Render(m.Keys.ShortForPage(), pageKeys)
+	case FocusDialog:
+		help = m.helpbar.Render(m.Keys.ShortForDialog())
 	}
+
 	helpView := helpBoxStyle.Render(help)
 	left := leftBoxStyle.Render(m.Nav.View())
-	right := rightBoxStyle.Render(m.currentPage().View())
+	right := rightBoxStyle.Render(m.currentPage().View() + "\n" + m.dialog.View())
 	below := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 
 	return lipgloss.JoinVertical(lipgloss.Left, helpView, below)

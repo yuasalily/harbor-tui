@@ -6,11 +6,11 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/yuasalily/harbor-tui/internal/app/cmds"
 	"github.com/yuasalily/harbor-tui/internal/app/ports"
 	"github.com/yuasalily/harbor-tui/internal/core"
 	"github.com/yuasalily/harbor-tui/internal/ui/components"
+	uidialog "github.com/yuasalily/harbor-tui/internal/ui/dialog"
 	"github.com/yuasalily/harbor-tui/internal/ui/pages"
 	"github.com/yuasalily/harbor-tui/internal/ui/views"
 )
@@ -23,9 +23,7 @@ type Model struct {
 	Keys    KeyMap
 	focused bool
 
-	confirming    bool
-	pendingDelete []string
-	selectedIDs   map[string]struct{}
+	selectedIDs map[string]struct{}
 }
 
 func (m *Model) SetFocused(f bool) {
@@ -116,22 +114,6 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 		if !m.focused {
 			return m, nil
 		}
-		if m.confirming {
-			switch {
-			case key.Matches(x, m.Keys.Yes):
-				refs := append([]string(nil), m.pendingDelete...)
-				m.confirming = false
-				m.pendingDelete = nil
-				return m, tea.Batch(
-					cmds.DeleteImagesCmd(m.core.API, refs, ports.ImageRemoveOptions{Force: true, PruneChildlen: true}, 0),
-				)
-			case key.Matches(x, m.Keys.No):
-				m.confirming = false
-				m.pendingDelete = nil
-				return m, nil
-			}
-			return m, nil
-		}
 		switch {
 		case key.Matches(x, m.Keys.Down):
 			m.Tbl.MoveDown(1)
@@ -156,12 +138,26 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 				}
 			}
 			if len(refs) > 0 {
-				m.pendingDelete = refs
-				m.confirming = true
+				return m, func() tea.Msg {
+					return uidialog.OpenConfirmDialogMsg{
+						Title:   "Delete images",
+						Body:    "This will remove the selected iamge(s)",
+						Hint:    "[y] Delete    [n] Cancel",
+						Payload: refs,
+					}
+				}
 			}
 			return m, nil
 		}
 	default:
+		switch v := msg.(type) {
+		case uidialog.DialogResultMsg:
+			if !v.Confirmed {
+				return m, nil
+			}
+			refs := v.Payload.([]string)
+			return m, cmds.DeleteImagesCmd(m.core.API, refs, ports.ImageRemoveOptions{Force: true, PruneChildlen: true}, 0)
+		}
 		m.core.Reduce(msg)
 		switch msg.(type) {
 		case cmds.ImagesListedMsg:
@@ -180,26 +176,5 @@ func (m *Model) View() string {
 	var b strings.Builder
 	b.WriteString("  Images\n\n")
 	b.WriteString(views.RenderImages(m.Tbl, "  "))
-	if m.confirming {
-		title := "Delete images"
-		msg := "This will remove the selected images(s)."
-		hint := "[y] Delete  /  [n]: Cancel"
-
-		avail := max(m.W-6, 20)
-		boxWidth := max(36, min(64, avail)) // 36 - 64の範囲でクランプ
-
-		danger := lipgloss.Color("204") // light red
-		dialog := components.RenderDialog(boxWidth, title, msg, hint, danger)
-
-		leftPad := "  "
-		dialog = indentLines(dialog, leftPad)
-
-		b.WriteString("\n")
-		b.WriteString(dialog)
-	}
 	return b.String()
-}
-
-func indentLines(s, prefix string) string {
-	return prefix + strings.ReplaceAll(s, "\n", "\n"+prefix)
 }

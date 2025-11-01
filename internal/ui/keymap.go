@@ -33,3 +33,7 @@ func (g GlobalKeyMap) ShortForPage() []key.Binding {
 	return []key.Binding{g.Quit, g.Tab}
 }
 
+func (g GlobalKeyMap) ShortForDialog() []key.Binding {
+	// 確認ダイアログ中はQuitのみ表示(y/nはダイアログ内に表示する)
+	return []key.Binding{g.Quit}
+}
