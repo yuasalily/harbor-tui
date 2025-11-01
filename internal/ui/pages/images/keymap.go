@@ -46,5 +46,5 @@ func NewKeyMap() KeyMap {
 }
 
 func (k KeyMap) Short() []key.Binding {
-	return []key.Binding{k.Up, k.Down, k.Toggle, k.Refresh, k.Delete, k.Yes, k.No}
+	return []key.Binding{k.Up, k.Down, k.Toggle, k.Refresh, k.Delete}
 }

@@ -179,20 +179,32 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 func (m *Model) View() string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("  Images:\n  - total: %d\n", len(m.core.Images.List)))
-	if n:=len(m.selectedIDs);n>0{
+	if n := len(m.selectedIDs); n > 0 {
 		b.WriteString(fmt.Sprintf("  - seleted: %d\n", n))
 	}
 	b.WriteString("\n")
 	b.WriteString(views.RenderImages(m.Tbl, "  "))
 	if m.confirming {
 		n := len(m.pendingDelete)
-		msg := "Delete the selected image? (y/N)"
+		title := "Confirm deletion"
+		msg := "Delete the selected image(s)?"
 		if n > 1 {
 			msg = fmt.Sprintf("Delete %d images?", n)
 		}
+		hint := "y: confirm    n: cancel"
+
+		boxWidth := max(m.W-6, 24)
+		dialog := components.RenderDialog(boxWidth, title, msg, hint)
+
+		leftPad := "  "
+		dialog = indentLines(dialog, leftPad)
+
 		b.WriteString("\n")
-		b.WriteString("  ")
-		b.WriteString(msg)
+		b.WriteString(dialog)
 	}
 	return b.String()
+}
+
+func indentLines(s, prefix string) string {
+	return prefix + strings.ReplaceAll(s, "\n", "\n"+prefix)
 }
