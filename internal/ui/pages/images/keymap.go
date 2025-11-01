@@ -7,6 +7,8 @@ type KeyMap struct {
 	Down    key.Binding
 	Refresh key.Binding
 	Delete  key.Binding
+	Yes     key.Binding
+	No      key.Binding
 }
 
 func NewKeyMap() KeyMap {
@@ -27,8 +29,17 @@ func NewKeyMap() KeyMap {
 			key.WithKeys("d"),
 			key.WithHelp("d", "delete image"),
 		),
+		Yes: key.NewBinding(
+			key.WithKeys("y"),
+			key.WithHelp("y", "confirm"),
+		),
+		No: key.NewBinding(
+			key.WithKeys("n"),
+			key.WithHelp("n", "cancel"),
+		),
 	}
 }
 
-func (k KeyMap) Short() []key.Binding { return []key.Binding{k.Up, k.Down, k.Refresh, k.Delete} }
-
+func (k KeyMap) Short() []key.Binding {
+	return []key.Binding{k.Up, k.Down, k.Refresh, k.Delete, k.Yes, k.No}
+}

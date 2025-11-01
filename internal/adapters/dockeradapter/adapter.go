@@ -11,6 +11,7 @@ type dockerClient interface {
 	Info(ctx context.Context) (docker.DaemonInfo, error)
 	ImagesList(ctx context.Context, opts docker.ImagesListOptions) ([]docker.ImageSummary, error)
 	ContainersList(ctx context.Context, opts docker.ContainersListOptions) ([]docker.ContainerSummary, error)
+	ImageRemove(ctx context.Context, ref string, opts docker.ImageRemoveOptions) error
 }
 
 type Adapter struct {
@@ -77,4 +78,11 @@ func (a *Adapter) ContainersList(ctx context.Context, opts ports.ContainersListO
 		})
 	}
 	return out, nil
+}
+
+func (a *Adapter) ImageRemove(ctx context.Context, ref string, opts ports.ImageRemoveOptions) error {
+	return a.c.ImageRemove(ctx, ref, docker.ImageRemoveOptions{
+		Force: opts.Force,
+		PruneChildlen: opts.PruneChildlen,
+	})
 }

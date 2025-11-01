@@ -38,6 +38,13 @@ func (f *fakeClient) ContainersList(ctx context.Context, opts docker.ContainersL
 	return f.cts, nil
 }
 
+func (f *fakeClient) ImageRemove(ctx context.Context, ref string, opts docker.ImageRemoveOptions) error {
+	if f.err != nil {
+		return f.err
+	}
+	return nil
+}
+
 func TestAdapter_Info_OK(t *testing.T) {
 	fa := &fakeClient{info: docker.DaemonInfo{Version: "27.2.0", OS: "linux", APIVersion: "1.47"}}
 	a := New(fa)
@@ -75,6 +82,20 @@ func TestAdapter_ImagesList_OK(t *testing.T) {
 func TestAdapter_ImagesList_Error(t *testing.T) {
 	a := New(&fakeClient{err: errors.New("boom")})
 	if _, err := a.ImagesList(context.Background(), ports.ImagesListOptions{}); err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}
+
+func TestAdapter_ImageRemove_Ok(t *testing.T) {
+	a := New(&fakeClient{})
+	if err := a.ImageRemove(context.Background(), "sha256:deadbeef", ports.ImageRemoveOptions{Force: true}); err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+}
+
+func TestAdapter_ImageRemove_Error(t *testing.T) {
+	a := New(&fakeClient{err: errors.New("boom")})
+	if err := a.ImageRemove(context.Background(), "alpine:latest", ports.ImageRemoveOptions{}); err == nil {
 		t.Fatalf("expected error, got nil")
 	}
 }
