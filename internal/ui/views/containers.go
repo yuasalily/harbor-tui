@@ -11,8 +11,8 @@ func ContainerColumns(totalWidth int) []table.Column {
 	if totalWidth < 60 {
 		totalWidth = 60
 	}
-	idW, nameW, imageW, stateusW, createdW := 14, 18, 18, 20, 16
-	fixed := idW + nameW + imageW + stateusW + createdW + 4
+	idW, nameW, imageW, statusW, createdW := 14, 18, 18, 20, 16
+	fixed := idW + nameW + imageW + statusW + createdW + 4
 	if totalWidth > fixed {
 		nameW += totalWidth - fixed
 	}
@@ -20,7 +20,7 @@ func ContainerColumns(totalWidth int) []table.Column {
 		{Title: "ID", Width: idW},
 		{Title: "NAME", Width: nameW},
 		{Title: "IMAGE", Width: imageW},
-		{Title: "STATUS", Width: stateusW},
+		{Title: "STATUS", Width: statusW},
 		{Title: "CREATED", Width: createdW},
 	}
 }

@@ -58,6 +58,9 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 	switch x := msg.(type) {
 	case tea.KeyMsg:
+		if !m.focused {
+			return m, nil
+		}
 		switch {
 		case key.Matches(x, m.Keys.Down):
 			m.Tbl.MoveDown(1)
