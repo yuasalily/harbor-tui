@@ -16,7 +16,7 @@ var (
 	dialogHintStyle = lipgloss.NewStyle().Faint(true)
 )
 
-func RenderDialog(w int, title, body, hint string, borderColr lipgloss.TerminalColor) string {
+func RenderDialog(w int, title, body, hint, prefix string, borderColr lipgloss.TerminalColor) string {
 	if w < 20 {
 		w = 20
 	}
@@ -46,7 +46,11 @@ func RenderDialog(w int, title, body, hint string, borderColr lipgloss.TerminalC
 	if borderColr != nil {
 		box = box.BorderForeground(borderColr)
 	}
-	return box.Width(w).Render(content)
+	out := box.Width(w).Render(content)
+	if prefix == "" {
+		return out
+	}
+	return prefix + strings.ReplaceAll(out, "\n", "\n"+prefix)
 }
 
 func runeCount(s string) int { return lipgloss.Width(s) }

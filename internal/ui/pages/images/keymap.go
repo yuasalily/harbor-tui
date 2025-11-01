@@ -8,8 +8,6 @@ type KeyMap struct {
 	Toggle  key.Binding
 	Refresh key.Binding
 	Delete  key.Binding
-	Yes     key.Binding
-	No      key.Binding
 }
 
 func NewKeyMap() KeyMap {
@@ -33,14 +31,6 @@ func NewKeyMap() KeyMap {
 		Delete: key.NewBinding(
 			key.WithKeys("d"),
 			key.WithHelp("d", "delete image"),
-		),
-		Yes: key.NewBinding(
-			key.WithKeys("y"),
-			key.WithHelp("y", "confirm"),
-		),
-		No: key.NewBinding(
-			key.WithKeys("n"),
-			key.WithHelp("n", "cancel"),
 		),
 	}
 }
