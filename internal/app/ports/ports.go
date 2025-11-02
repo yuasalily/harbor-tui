@@ -32,7 +32,7 @@ type ImagesListOptions struct {
 }
 
 type ImageRemoveOptions struct {
-	Force bool
+	Force         bool
 	PruneChildlen bool
 }
 
@@ -40,6 +40,7 @@ type ContainerSummary struct {
 	ID        string
 	Names     []string
 	Image     string
+	ImageID   string
 	State     string // created, running, ...
 	Status    string // "UP 10 minutes", ...
 	CreatedAt time.Time
