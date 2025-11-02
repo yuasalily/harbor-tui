@@ -11,13 +11,15 @@ func ImageColumns(totalWidth int) []table.Column {
 	if totalWidth < 60 {
 		totalWidth = 60
 	}
+	selWidth := 5
 	idWidth := 14
 	createdWidth := 16
 	mergin := 3
 
-	fixed := idWidth + createdWidth + mergin
+	fixed := selWidth + idWidth + createdWidth + mergin
 	tagWidth := max(totalWidth-fixed, 20)
 	return []table.Column{
+		{Title: "SEL", Width: selWidth},
 		{Title: "ID", Width: idWidth},
 		{Title: "TAG", Width: tagWidth},
 		{Title: "CREATED", Width: createdWidth},
@@ -32,6 +34,7 @@ func ApplyImages(t *table.Model, images []ports.ImageSummary) {
 			tag = it.RepoTags[0]
 		}
 		rows = append(rows, table.Row{
+			"", // 別で埋める
 			shortID(it.ID),
 			tag,
 			it.CreatedAt.Local().Format("2006-01-02 15:04"),
