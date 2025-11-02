@@ -75,22 +75,20 @@ func (m *Model) toggleSelectAtCursor() {
 }
 
 func (m *Model) decorateSelectionOnRows() {
-	// TAG列(index=1)の先頭に[*]/[ ]を付与
+	// SEL列(index=0)に[*]/[ ]をいれる
 	rows := m.Tbl.Rows()
 	for i := range rows {
 		if i >= len(m.core.Images.List) {
 			continue
 		}
 		id := m.core.Images.List[i].ID
-		mark := "[ ] "
+		mark := "[ ]"
 		if _, ok := m.selectedIDs[id]; ok {
-			mark = "[*] "
+			mark = "[*]"
 		}
-		tag := rows[i][1]
-		if strings.HasPrefix(tag, "[*] ") || strings.HasPrefix(tag, "[ ] ") {
-			tag = tag[4:]
+		if len(rows[i]) > 0 {
+			rows[i][0] = mark
 		}
-		rows[i][1] = mark + tag
 	}
 	m.Tbl.SetRows(rows)
 }
