@@ -73,6 +73,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.dialog = dlg
 			if !m.dialog.Visible {
 				m.focus = FocusPage
+				if f, ok := m.currentPage().(pages.Focusable); ok {
+					f.SetFocused(true)
+				}
 			}
 			return m, cmd
 		case key.Matches(x, m.Keys.Quit):

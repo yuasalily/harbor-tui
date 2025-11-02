@@ -23,7 +23,8 @@ type Model struct {
 	Keys    KeyMap
 	focused bool
 
-	selectedIDs map[string]struct{}
+	selectedIDs    map[string]struct{}
+	resetCursorTop bool // 削除後に先頭へカーソルを移動するためのフラグ
 }
 
 func (m *Model) SetFocused(f bool) {
@@ -158,8 +159,13 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 			views.ApplyImages(&m.Tbl, m.core.Images.List)
 			m.pruneSelectionToCurrentList()
 			m.decorateSelectionOnRows()
+			if m.resetCursorTop {
+				m.Tbl.SetCursor(0)
+				m.resetCursorTop = false
+			}
 		case cmds.ImagesDeletedMsg:
 			m.selectedIDs = map[string]struct{}{}
+			m.resetCursorTop = true
 			return m, m.Init()
 		}
 	}
