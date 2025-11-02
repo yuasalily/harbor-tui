@@ -162,14 +162,12 @@ func (m Model) currentPage() pages.Page {
 }
 
 var (
-	borderColor = lipgloss.Color("240")
-
-	leftBoxStyle = lipgloss.NewStyle().
-			Padding(0, 1).Border(lipgloss.NormalBorder()).BorderForeground(borderColor)
-	helpBoxStyle = lipgloss.NewStyle().
-			Padding(0, 1).Border(lipgloss.NormalBorder()).BorderForeground(borderColor)
-	rightBoxStyle = lipgloss.NewStyle().
-			Padding(0, 1).Border(lipgloss.NormalBorder()).BorderForeground(borderColor)
+	borderColor      = lipgloss.Color("240") // 通常時
+	focusBorderColor = lipgloss.Color("63")  // フォーカス時(ライトブルー)
+	baseBoxStyle     = lipgloss.NewStyle().
+				Padding(0, 1).
+				Border(lipgloss.NormalBorder()).
+				BorderForeground(borderColor)
 )
 
 func (m Model) View() string {
@@ -191,9 +189,18 @@ func (m Model) View() string {
 		help = m.helpbar.Render(m.Keys.ShortForDialog())
 	}
 
-	helpView := helpBoxStyle.Render(help)
-	left := leftBoxStyle.Render(m.Nav.View())
-	right := rightBoxStyle.Render(m.currentPage().View() + "\n" + m.dialog.View())
+	leftStyle := baseBoxStyle
+	rightStyle := baseBoxStyle
+	if m.focus == FocusNav {
+		leftStyle = leftStyle.BorderForeground(focusBorderColor)
+	}
+	if m.focus == FocusPage {
+		rightStyle = rightStyle.BorderForeground(focusBorderColor)
+	}
+	helpView := baseBoxStyle.Render(help)
+	left := leftStyle.Render(m.Nav.View())
+	right := rightStyle.Render(m.currentPage().View() + "\n" + m.dialog.View())
+
 	below := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 
 	return lipgloss.JoinVertical(lipgloss.Left, helpView, below)
