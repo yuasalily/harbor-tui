@@ -73,6 +73,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.dialog = dlg
 			if !m.dialog.Visible {
 				m.focus = FocusPage
+				if f, ok := m.currentPage().(pages.Focusable); ok {
+					f.SetFocused(true)
+				}
 			}
 			return m, cmd
 		case key.Matches(x, m.Keys.Quit):
@@ -131,13 +134,6 @@ func (m *Model) applySidebarSelection() {
 	}
 	title := m.Nav.SelectedItem().FilterValue()
 	m.current = pages.FromTitle(title)
-}
-
-func (m *Model) setCurrent(id pages.ID) {
-	if _, ok := m.pages[id]; !ok {
-		panic(fmt.Sprintf("no page instance for id=%v", id))
-	}
-	m.current = id
 }
 
 func (m *Model) toggleFocus() {
