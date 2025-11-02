@@ -168,6 +168,17 @@ var (
 				Padding(0, 1).
 				Border(lipgloss.NormalBorder()).
 				BorderForeground(borderColor)
+	// HelpBar専用スタイル
+	helpBorderColor = lipgloss.Color("60") // ブルー
+	helpBoxStyle    = lipgloss.NewStyle().
+			Padding(0, 1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(helpBorderColor)
+	helpBadgeStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("230")). // ほぼ白
+			Background(helpBorderColor).
+			Padding(0, 1)
 )
 
 func (m Model) View() string {
@@ -197,7 +208,11 @@ func (m Model) View() string {
 	if m.focus == FocusPage {
 		rightStyle = rightStyle.BorderForeground(focusBorderColor)
 	}
-	helpView := baseBoxStyle.Render(help)
+
+	helpBadge := helpBadgeStyle.Render("HELP")
+	helpRow := lipgloss.JoinHorizontal(lipgloss.Top, helpBadge, " ", help)
+	helpView := helpBoxStyle.Render(helpRow)
+
 	left := leftStyle.Render(m.Nav.View())
 	right := rightStyle.Render(m.currentPage().View() + "\n" + m.dialog.View())
 
