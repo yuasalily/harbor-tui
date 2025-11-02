@@ -13,6 +13,7 @@ type ContainerSummary struct {
 	ID        string
 	Names     []string
 	Image     string
+	ImageID   string
 	State     string
 	Status    string
 	CreatedAt time.Time
@@ -46,6 +47,7 @@ func (c *Client) ContainersList(ctx context.Context, opts ContainersListOptions)
 			ID:        it.ID,
 			Names:     it.Names,
 			Image:     it.Image,
+			ImageID:   it.ImageID,
 			State:     it.State,
 			Status:    it.Status,
 			CreatedAt: created,

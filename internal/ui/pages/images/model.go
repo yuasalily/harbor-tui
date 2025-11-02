@@ -24,7 +24,8 @@ type Model struct {
 	focused bool
 
 	selectedIDs    map[string]struct{}
-	resetCursorTop bool // 削除後に先頭へカーソルを移動するためのフラグ
+	resetCursorTop bool                // 削除後に先頭へカーソルを移動するためのフラグ
+	inUseIDs       map[string]struct{} // コンテナが使用中のImageID
 }
 
 func (m *Model) SetFocused(f bool) {
@@ -44,6 +45,7 @@ func New(core *core.Core) *Model {
 		Keys:        NewKeyMap(),
 		focused:     false,
 		selectedIDs: map[string]struct{}{},
+		inUseIDs:    map[string]struct{}{},
 	}
 }
 
@@ -57,7 +59,11 @@ func (m *Model) SetSize(w, h int) {
 }
 
 func (m *Model) Init() tea.Cmd {
-	return cmds.FetchImagesCmd(m.core.API, m.core.Images.Filter, 0)
+	// 使用中判定のため、イメージとコンテナを取得
+	return tea.Batch(
+		cmds.FetchImagesCmd(m.core.API, m.core.Images.Filter, 0),
+		cmds.FetchContainersCmd(m.core.API, m.core.Containers.Filter, 0),
+	)
 }
 
 func (m *Model) toggleSelectAtCursor() {
@@ -66,6 +72,10 @@ func (m *Model) toggleSelectAtCursor() {
 		return
 	}
 	id := m.core.Images.List[idx].ID
+	// 使用中は選択不可
+	if _, locked := m.inUseIDs[id]; locked {
+		return
+	}
 	if _, ok := m.selectedIDs[id]; ok {
 		delete(m.selectedIDs, id)
 	} else {
@@ -75,7 +85,7 @@ func (m *Model) toggleSelectAtCursor() {
 }
 
 func (m *Model) decorateSelectionOnRows() {
-	// SEL列(index=0)に[*]/[ ]をいれる
+	// SEL列(index=0)に [*] / [ ] / [L] をいれる
 	rows := m.Tbl.Rows()
 	for i := range rows {
 		if i >= len(m.core.Images.List) {
@@ -83,6 +93,9 @@ func (m *Model) decorateSelectionOnRows() {
 		}
 		id := m.core.Images.List[i].ID
 		mark := "[ ]"
+		if _, locked := m.inUseIDs[id]; locked {
+			mark = "[L]"
+		}
 		if _, ok := m.selectedIDs[id]; ok {
 			mark = "[*]"
 		}
@@ -91,6 +104,17 @@ func (m *Model) decorateSelectionOnRows() {
 		}
 	}
 	m.Tbl.SetRows(rows)
+}
+
+func (m *Model) rebuildInUseSet(cts []ports.ContainerSummary) {
+	set := make(map[string]struct{}, len(cts))
+	for _, c := range cts {
+		if c.ImageID != "" {
+			set[c.ImageID] = struct{}{}
+		}
+	}
+	m.inUseIDs = set
+	m.pruneSelectionToCurrentList()
 }
 
 func (m *Model) pruneSelectionToCurrentList() {
@@ -128,7 +152,9 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 		case key.Matches(x, m.Keys.Delete):
 			refs := make([]string, 0, len(m.selectedIDs))
 			for id := range m.selectedIDs {
-				refs = append(refs, id)
+				if _, locked := m.inUseIDs[id]; !locked {
+					refs = append(refs, id)
+				}
 			}
 			if len(refs) > 0 {
 				return m, func() tea.Msg {
@@ -161,6 +187,9 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 				m.Tbl.SetCursor(0)
 				m.resetCursorTop = false
 			}
+		case cmds.ContainersListMsg:
+			m.rebuildInUseSet(m.core.Containers.List)
+			m.decorateSelectionOnRows()
 		case cmds.ImagesDeletedMsg:
 			m.selectedIDs = map[string]struct{}{}
 			m.resetCursorTop = true
