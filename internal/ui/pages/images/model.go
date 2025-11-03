@@ -86,19 +86,23 @@ func (m *Model) toggleSelectAtCursor() {
 }
 
 func (m *Model) decorateSelectionOnRows() {
-	// SEL列(index=0)に [*] / [ ] / [L] をいれる
+	// SEL列(index=0)に [*] / [ ] / [L] を入れる(優先度: L > * > 空)
 	rows := m.Tbl.Rows()
 	for i := range rows {
 		if i >= len(m.core.Images.List) {
 			continue
 		}
 		id := m.core.Images.List[i].ID
+		_, locked := m.inUseIDs[id]
+		_, selected := m.selectedIDs[id]
 		mark := "[ ]"
-		if _, locked := m.inUseIDs[id]; locked {
+		switch {
+		case locked:
 			mark = "[L]"
-		}
-		if _, ok := m.selectedIDs[id]; ok {
+		case selected:
 			mark = "[*]"
+		default:
+			mark = "[ ]"
 		}
 		if len(rows[i]) > 0 {
 			rows[i][0] = mark
@@ -200,14 +204,17 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 			if msg.Err != nil {
 				// 失敗時はErrorダイアログ
 				errMsg := fmt.Sprintf("Failed to delete image(s): %v", msg.Err)
-				return m, func() tea.Msg {
-					return uidialog.OpenDialogMsg{
-						Kind:  uidialog.DialogKindError,
-						Title: "Delete failed",
-						Body:  errMsg,
-						Hint:  "[enter] to close",
-					}
-				}
+				return m, tea.Batch(
+					func() tea.Msg {
+						return uidialog.OpenDialogMsg{
+							Kind:  uidialog.DialogKindError,
+							Title: "Delete failed",
+							Body:  errMsg,
+							Hint:  "[enter] to close",
+						}
+					},
+					m.Init(),
+				)
 			}
 			// 成功時はリロード
 			m.selectedIDs = map[string]struct{}{}
