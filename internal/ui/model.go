@@ -112,8 +112,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.dialog.SetSize(rightW, pageInnerH)
 		return m, nil
-	case uidialog.OpenConfirmDialogMsg:
-		m.dialog.OpenConfirm(x.Title, x.Body, x.Hint, lipgloss.Color("204"), x.Payload)
+	case uidialog.OpenDialogMsg:
+		m.dialog.Open(x.Kind, x.Title, x.Body, x.Hint, lipgloss.Color("204"), x.Payload)
 		if f, ok := m.currentPage().(pages.Focusable); ok {
 			f.SetFocused(false)
 		}
