@@ -67,8 +67,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch x := msg.(type) {
 	case tea.KeyMsg:
 		switch {
+		case key.Matches(x, m.Keys.Quit):
+			return m, tea.Quit
+		case key.Matches(x, m.Keys.Tab):
+			m.toggleFocus()
+			return m, nil
+		}
 		// ダイアログ表示中はダイアログにキーを移譲
-		case m.focus == FocusDialog:
+		if m.focus == FocusDialog {
 			dlg, cmd := m.dialog.Update(x)
 			m.dialog = dlg
 			if !m.dialog.Visible {
@@ -78,11 +84,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			return m, cmd
-		case key.Matches(x, m.Keys.Quit):
-			return m, tea.Quit
-		case key.Matches(x, m.Keys.Tab):
-			m.toggleFocus()
-			return m, nil
 		}
 		if m.focus == FocusNav {
 			prev := m.Nav.Index()
@@ -112,15 +113,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.dialog.SetSize(rightW, pageInnerH)
 		return m, nil
-	case uidialog.OpenConfirmDialogMsg:
-		m.dialog.OpenConfirm(x.Title, x.Body, x.Hint, lipgloss.Color("204"), x.Payload)
+	case uidialog.OpenDialogMsg:
+		m.dialog.Open(x.Kind, x.Title, x.Body, x.Hint, lipgloss.Color("204"), x.Payload)
 		if f, ok := m.currentPage().(pages.Focusable); ok {
 			f.SetFocused(false)
 		}
 		m.focus = FocusDialog
 		return m, nil
-	case uidialog.DialogResultMsg:
-		// ページに結果メッセージを渡す
 	}
 
 	p, cmd := m.currentPage().Update(msg)
@@ -148,8 +147,6 @@ func (m *Model) toggleFocus() {
 			f.SetFocused(false)
 		}
 		m.focus = FocusNav
-	case FocusDialog:
-		// 将来: ダイアログに移譲
 	}
 }
 

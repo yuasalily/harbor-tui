@@ -14,10 +14,6 @@ func NewGlobalKeyMap() GlobalKeyMap {
 			key.WithKeys("q", "ctrl+c"),
 			key.WithHelp("q", "quit"),
 		),
-		Select: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "select"),
-		),
 		Tab: key.NewBinding(
 			key.WithKeys("tab"),
 			key.WithHelp("tab", "focus"),
@@ -34,6 +30,6 @@ func (g GlobalKeyMap) ShortForPage() []key.Binding {
 }
 
 func (g GlobalKeyMap) ShortForDialog() []key.Binding {
-	// 確認ダイアログ中はQuitのみ表示(y/nはダイアログ内に表示する)
+	// 確認ダイアログ中はQuitのみ表示(コマンドはダイアログ内に表示する)
 	return []key.Binding{g.Quit}
 }

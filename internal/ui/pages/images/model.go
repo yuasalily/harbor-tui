@@ -1,6 +1,7 @@
 package images
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -158,7 +159,8 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 			}
 			if len(refs) > 0 {
 				return m, func() tea.Msg {
-					return uidialog.OpenConfirmDialogMsg{
+					return uidialog.OpenDialogMsg{
+						Kind:    uidialog.DialogKindConfirm,
 						Title:   "Delete images",
 						Body:    "This will remove the selected iamge(s)",
 						Hint:    "[y] Delete    [n] Cancel",
@@ -175,10 +177,14 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 				return m, nil
 			}
 			refs := v.Payload.([]string)
-			return m, cmds.DeleteImagesCmd(m.core.API, refs, ports.ImageRemoveOptions{Force: true, PruneChildlen: true}, 0)
+			return m, cmds.DeleteImagesCmd(m.core.API,
+				refs,
+				ports.ImageRemoveOptions{Force: false, PruneChildlen: true},
+				0,
+			)
 		}
 		m.core.Reduce(msg)
-		switch msg.(type) {
+		switch msg := msg.(type) {
 		case cmds.ImagesListedMsg:
 			views.ApplyImages(&m.Tbl, m.core.Images.List)
 			m.pruneSelectionToCurrentList()
@@ -191,6 +197,19 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 			m.rebuildInUseSet(m.core.Containers.List)
 			m.decorateSelectionOnRows()
 		case cmds.ImagesDeletedMsg:
+			if msg.Err != nil {
+				// 失敗時はErrorダイアログ
+				errMsg := fmt.Sprintf("Failed to delete image(s): %v", msg.Err)
+				return m, func() tea.Msg {
+					return uidialog.OpenDialogMsg{
+						Kind:  uidialog.DialogKindError,
+						Title: "Delete failed",
+						Body:  errMsg,
+						Hint:  "[enter] to close",
+					}
+				}
+			}
+			// 成功時はリロード
 			m.selectedIDs = map[string]struct{}{}
 			m.resetCursorTop = true
 			return m, m.Init()
