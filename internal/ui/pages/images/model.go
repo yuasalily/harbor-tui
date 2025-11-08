@@ -166,7 +166,7 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 					return uidialog.OpenDialogMsg{
 						Kind:    uidialog.DialogKindConfirm,
 						Title:   "Delete images",
-						Body:    "This will remove the selected iamge(s)",
+						Body:    "This will remove the selected image(s)",
 						Hint:    "[y] Delete    [n] Cancel",
 						Payload: refs,
 					}
@@ -183,7 +183,7 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 			refs := v.Payload.([]string)
 			return m, cmds.DeleteImagesCmd(m.core.API,
 				refs,
-				ports.ImageRemoveOptions{Force: false, PruneChildlen: true},
+				ports.ImageRemoveOptions{Force: false, PruneChildren: true},
 				0,
 			)
 		}

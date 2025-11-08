@@ -22,7 +22,7 @@ func NewGlobalKeyMap() GlobalKeyMap {
 }
 
 func (g GlobalKeyMap) ShortForNav() []key.Binding {
-	return []key.Binding{g.Quit, g.Select, g.Tab}
+	return []key.Binding{g.Quit, g.Tab}
 }
 
 func (g GlobalKeyMap) ShortForPage() []key.Binding {

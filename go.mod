@@ -1,6 +1,6 @@
 module github.com/yuasalily/harbor-tui
 
-go 1.25
+go 1.25.3
 
 require (
 	github.com/charmbracelet/bubbles v0.21.0
