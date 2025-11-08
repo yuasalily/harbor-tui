@@ -16,7 +16,7 @@ var (
 	dialogHintStyle = lipgloss.NewStyle().Faint(true)
 )
 
-func RenderDialog(w int, title, body, hint, prefix string, borderColr lipgloss.TerminalColor) string {
+func RenderDialog(w int, title, body, hint, prefix string, borderColor lipgloss.TerminalColor) string {
 	if w < 20 {
 		w = 20
 	}
@@ -43,8 +43,8 @@ func RenderDialog(w int, title, body, hint, prefix string, borderColr lipgloss.T
 	}
 	content = strings.Join(lines, "\n")
 	box := dialogBoxStyle
-	if borderColr != nil {
-		box = box.BorderForeground(borderColr)
+	if borderColor != nil {
+		box = box.BorderForeground(borderColor)
 	}
 	out := box.Width(w).Render(content)
 	if prefix == "" {
