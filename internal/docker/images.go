@@ -25,7 +25,7 @@ type ImagesListOptions struct {
 
 type ImageRemoveOptions struct {
 	Force         bool
-	PruneChildlen bool
+	PruneChildren bool
 }
 
 // Dockerデーモンからイメージ一覧を取得してDTOに変換
@@ -59,7 +59,7 @@ func (c *Client) ImagesList(ctx context.Context, opts ImagesListOptions) ([]Imag
 func (c *Client) ImageRemove(ctx context.Context, ref string, opts ImageRemoveOptions) error {
 	_, err := c.cli.ImageRemove(ctx, ref, image.RemoveOptions{
 		Force:         opts.Force,
-		PruneChildren: opts.PruneChildlen,
+		PruneChildren: opts.PruneChildren,
 	})
 	return err
 }

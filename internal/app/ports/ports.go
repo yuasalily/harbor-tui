@@ -33,7 +33,7 @@ type ImagesListOptions struct {
 
 type ImageRemoveOptions struct {
 	Force         bool
-	PruneChildlen bool
+	PruneChildren bool
 }
 
 type ContainerSummary struct {

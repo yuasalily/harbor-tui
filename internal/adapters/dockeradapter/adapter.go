@@ -84,6 +84,6 @@ func (a *Adapter) ContainersList(ctx context.Context, opts ports.ContainersListO
 func (a *Adapter) ImageRemove(ctx context.Context, ref string, opts ports.ImageRemoveOptions) error {
 	return a.c.ImageRemove(ctx, ref, docker.ImageRemoveOptions{
 		Force:         opts.Force,
-		PruneChildlen: opts.PruneChildlen,
+		PruneChildren: opts.PruneChildren,
 	})
 }
