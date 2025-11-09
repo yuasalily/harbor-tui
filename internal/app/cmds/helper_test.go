@@ -2,6 +2,8 @@ package cmds
 
 import (
 	"context"
+	"io"
+	"strings"
 
 	"github.com/yuasalily/harbor-tui/internal/app/ports"
 )
@@ -66,4 +68,11 @@ func (f *fakeAPI) ImageRemove(ctx context.Context, ref string, opts ports.ImageR
 		return f.err
 	}
 	return nil
+}
+
+func (f *fakeAPI) ContainerLogs(ctx context.Context, opts ports.ContainerLogsOptions) (io.ReadCloser, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return io.NopCloser(strings.NewReader("A\nB\n")), nil
 }
