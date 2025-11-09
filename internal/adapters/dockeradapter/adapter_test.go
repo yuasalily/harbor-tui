@@ -3,6 +3,8 @@ package dockeradapter
 import (
 	"context"
 	"errors"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,6 +45,13 @@ func (f *fakeClient) ImageRemove(ctx context.Context, ref string, opts docker.Im
 		return f.err
 	}
 	return nil
+}
+
+func (f *fakeClient) ContainerLogs(ctx context.Context, opts docker.ContainerLogsOptions) (io.ReadCloser, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return io.NopCloser(strings.NewReader("line1\nline2\n")), nil
 }
 
 func TestAdapter_Info_OK(t *testing.T) {
@@ -96,6 +105,26 @@ func TestAdapter_ImageRemove_Ok(t *testing.T) {
 func TestAdapter_ImageRemove_Error(t *testing.T) {
 	a := New(&fakeClient{err: errors.New("boom")})
 	if err := a.ImageRemove(context.Background(), "alpine:latest", ports.ImageRemoveOptions{}); err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}
+
+func TestAdapter_ContaienrLogs_OK(t *testing.T) {
+	a := New(&fakeClient{})
+	rc, err := a.ContainerLogs(context.Background(), ports.ContainerLogsOptions{ContainerID: "x"})
+	if err != nil {
+		t.Fatalf("unexpected logs: %v", err)
+	}
+	defer rc.Close()
+	b, _ := io.ReadAll(rc)
+	if !strings.Contains(string(b), "line1") {
+		t.Fatalf("unexpected logs: %s", string(b))
+	}
+}
+
+func TestAdapter_ContainerLogs_Error(t *testing.T) {
+	a := New(&fakeClient{err: errors.New("boom")})
+	if _, err := a.ContainerLogs(context.Background(), ports.ContainerLogsOptions{ContainerID: "x"}); err == nil {
 		t.Fatalf("expected error, got nil")
 	}
 }

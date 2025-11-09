@@ -2,6 +2,7 @@ package dockeradapter
 
 import (
 	"context"
+	"io"
 
 	"github.com/yuasalily/harbor-tui/internal/app/ports"
 	"github.com/yuasalily/harbor-tui/internal/docker"
@@ -12,6 +13,7 @@ type dockerClient interface {
 	ImagesList(ctx context.Context, opts docker.ImagesListOptions) ([]docker.ImageSummary, error)
 	ContainersList(ctx context.Context, opts docker.ContainersListOptions) ([]docker.ContainerSummary, error)
 	ImageRemove(ctx context.Context, ref string, opts docker.ImageRemoveOptions) error
+	ContainerLogs(ctx context.Context, opts docker.ContainerLogsOptions) (io.ReadCloser, error)
 }
 
 type Adapter struct {
@@ -85,5 +87,17 @@ func (a *Adapter) ImageRemove(ctx context.Context, ref string, opts ports.ImageR
 	return a.c.ImageRemove(ctx, ref, docker.ImageRemoveOptions{
 		Force:         opts.Force,
 		PruneChildren: opts.PruneChildren,
+	})
+}
+
+func (a *Adapter) ContainerLogs(ctx context.Context, opts ports.ContainerLogsOptions) (io.ReadCloser, error) {
+	return a.c.ContainerLogs(ctx, docker.ContainerLogsOptions{
+		ContainerID: opts.ContainerID,
+		Follow:      opts.Follow,
+		Tail:        opts.Tail,
+		Since:       opts.Since,
+		Timestamps:  opts.Timestamps,
+		Stdout:      opts.Stdout || (!opts.Stdout && !opts.Stderr),
+		Stderr:      opts.Stderr,
 	})
 }

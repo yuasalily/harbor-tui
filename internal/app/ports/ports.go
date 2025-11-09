@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"io"
 	"time"
 )
 
@@ -10,6 +11,7 @@ type DockerAPI interface {
 	ImagesList(ctx context.Context, opts ImagesListOptions) ([]ImageSummary, error)
 	ContainersList(ctx context.Context, opts ContainersListOptions) ([]ContainerSummary, error)
 	ImageRemove(ctx context.Context, ref string, opts ImageRemoveOptions) error
+	ContainerLogs(ctx context.Context, opts ContainerLogsOptions) (io.ReadCloser, error)
 }
 
 type DaemonInfo struct {
@@ -50,4 +52,14 @@ type ContainersListOptions struct {
 	All    bool
 	Name   string
 	Status string
+}
+
+type ContainerLogsOptions struct {
+	ContainerID string
+	Follow      bool
+	Tail        int
+	Since       time.Time
+	Timestamps  bool
+	Stdout      bool
+	Stderr      bool
 }
