@@ -227,7 +227,6 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 
 func (m *Model) View() string {
 	var b strings.Builder
-	b.WriteString("  Images\n\n")
 	b.WriteString(views.RenderImages(m.Tbl, "  "))
 	return b.String()
 }

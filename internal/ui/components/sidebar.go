@@ -2,7 +2,6 @@ package components
 
 import (
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type navItem string
@@ -16,11 +15,17 @@ func NewSidebar(items []string, width, height int) list.Model {
 	for _, s := range items {
 		it = append(it, navItem(s))
 	}
-	l := list.New(it, list.NewDefaultDelegate(), width, height)
-	l.Title = "Pages"
+
+	delegate := list.NewDefaultDelegate()
+	delegate.ShowDescription = false
+	delegate.SetSpacing(1)
+
+	l := list.New(it, delegate, width, height)
+	
+	l.SetShowTitle(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.SetShowHelp(false)
-	l.Styles.Title = lipgloss.NewStyle().Bold(true)
+
 	return l
 }
