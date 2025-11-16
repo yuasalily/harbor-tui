@@ -8,10 +8,11 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/yuasalily/harbor-tui/internal/app/cmds"
-	"github.com/yuasalily/harbor-tui/internal/app/ports"
 	"github.com/yuasalily/harbor-tui/internal/core"
 	"github.com/yuasalily/harbor-tui/internal/ui/components"
 	"github.com/yuasalily/harbor-tui/internal/ui/pages"
+	"github.com/yuasalily/harbor-tui/internal/ui/pages/containers/details"
+	"github.com/yuasalily/harbor-tui/internal/ui/pages/containers/details/logs"
 	"github.com/yuasalily/harbor-tui/internal/ui/views"
 )
 
@@ -19,7 +20,7 @@ type viewMode int
 
 const (
 	modeList viewMode = iota
-	modeDetailLogs
+	modeDetail
 )
 
 type Model struct {
@@ -30,21 +31,21 @@ type Model struct {
 	Keys    KeyMap
 	focused bool
 
-	containerDetailMode viewMode
-	containerDetailID   string
-	containerDetailBuf  []string
-	containerDetailCh   <-chan string
-	containerDetailDone <-chan error
+	mode     viewMode
+	detail   details.Detail
+	detailID string
+	deps     details.Dependencies
 }
 
 func New(core *core.Core) *Model {
 	cols := views.ContainerColumns(80)
 	return &Model{
-		core:                core,
-		Tbl:                 components.NewTable(cols, 12, true),
-		Keys:                NewKeyMap(),
-		focused:             false,
-		containerDetailMode: modeList,
+		core:    core,
+		Tbl:     components.NewTable(cols, 12, true),
+		Keys:    NewKeyMap(),
+		focused: false,
+		mode:    modeList,
+		deps:    details.Dependencies{API: core.API},
 	}
 }
 
@@ -63,6 +64,9 @@ func (m *Model) SetFocused(f bool) {
 	} else {
 		m.Tbl.Blur()
 	}
+	if m.mode == modeDetail && m.detail != nil {
+		m.detail.SetFocused(f)
+	}
 }
 
 func (m *Model) SetSize(w, h int) {
@@ -72,6 +76,9 @@ func (m *Model) SetSize(w, h int) {
 
 	tableH := max(m.H-6, 5)
 	m.Tbl.SetHeight(tableH)
+	if m.mode == modeDetail && m.detail != nil {
+		m.detail.SetSize(w, h)
+	}
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -84,17 +91,23 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 		if !m.focused {
 			return m, nil
 		}
-		if m.containerDetailMode == modeDetailLogs {
+		if m.mode == modeDetail {
 			switch x.String() {
 			case "esc":
-				// 詳細ビューを閉じて一覧に戻る
-				m.containerDetailMode = modeList
-				m.containerDetailID = ""
-				m.containerDetailBuf = nil
-				m.containerDetailCh = nil
-				m.containerDetailDone = nil
+				if m.detail != nil {
+					_ = m.detail.Close()
+					m.detail = nil
+					m.detailID = ""
+				}
+				m.mode = modeList
 				return m, nil
 			}
+			if m.detail != nil {
+				d, cmd := m.detail.Update(x)
+				m.detail = d
+				return m, cmd
+			}
+			return m, nil
 		}
 		switch {
 		case key.Matches(x, m.Keys.Down):
@@ -106,44 +119,32 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 		case key.Matches(x, m.Keys.Refresh):
 			return m, m.Init()
 		case key.Matches(x, m.Keys.Logs):
-			if m.containerDetailMode == modeList {
-				id := m.selectedContainerID()
-				if id == "" {
-					return m, nil
-				}
-				m.containerDetailMode = modeDetailLogs
-				m.containerDetailID = id
-				m.containerDetailBuf = nil
-				return m, cmds.StartContainerLogsCmd(m.core.API, ports.ContainerLogsOptions{
-					ContainerID: id,
-					Tail: 200,
-					Stdout: true,
-					Stderr: true,
-				})
+			id := m.selectedContainerID()
+			if id == "" {
+				return m, nil
 			}
-			return m, nil
+			m.mode = modeDetail
+			m.detailID = id
+			m.detail = logs.New(m.deps)
+			m.detail.SetTarget(id)
+			m.detail.SetSize(m.W, m.H)
+			m.detail.SetFocused(m.focused)
+			return m, m.detail.Init()
+
 		case key.Matches(x, m.Keys.Remove):
 			// TODO: コンテナ削除
 			return m, nil
 		}
 	default:
 		m.core.Reduce(msg)
-		switch v := msg.(type) {
-		case cmds.ContainerLogsStartedMsg:
-			if m.containerDetailMode == modeDetailLogs && v.ContainerID == m.containerDetailID {
-				m.containerDetailCh = v.Ch
-				m.containerDetailDone = v.Done
-				// 次の1行を待つ
-				return m, cmds.NextContainerLogLine(m.containerDetailID, m.containerDetailCh, m.containerDetailDone)
+		if m.mode == modeDetail && m.detail != nil {
+			d, cmd := m.detail.Update(msg)
+			m.detail = d
+			if cmd != nil {
+				return m, cmd
 			}
-		case cmds.ContainerLogLineMsg:
-			if m.containerDetailMode == modeDetailLogs && v.ContainerID == m.containerDetailID {
-				m.containerDetailBuf = append(m.containerDetailBuf, v.Line)
-				// 次行を待つ
-				return m, cmds.NextContainerLogLine(m.containerDetailID, m.containerDetailCh, m.containerDetailDone)
-			}
-		case cmds.ContainerLogsEndedMsg:
-			return m, nil
+		}
+		switch msg.(type) {
 		case cmds.ContainersListMsg:
 			views.ApplyContainers(&m.Tbl, m.core.Containers.List)
 		}
@@ -152,15 +153,8 @@ func (m *Model) Update(msg tea.Msg) (pages.Page, tea.Cmd) {
 }
 
 func (m *Model) View() string {
-	if m.containerDetailMode == modeDetailLogs {
-		var b strings.Builder
-		b.WriteString("  Container Logs\n\n")
-		for _, ln := range m.containerDetailBuf {
-			b.WriteString("  ")
-			b.WriteString(ln)
-			b.WriteByte('\n')
-		}
-		return b.String()
+	if m.mode == modeDetail && m.detail != nil {
+		return m.detail.View()
 	}
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("  Containers:\n  - total: %d\n\n", len(m.core.Containers.List)))
