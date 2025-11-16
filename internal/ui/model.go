@@ -176,6 +176,12 @@ var (
 			Foreground(lipgloss.Color("230")). // ほぼ白
 			Background(helpBorderColor).
 			Padding(0, 1)
+	// 現在ページ名バッジ
+	pageBadgeColor = lipgloss.Color("244") // グレー系
+	pageBadgeStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("230")).
+			Background(pageBadgeColor).Padding(0, 1)
 )
 
 func (m Model) View() string {
@@ -206,8 +212,9 @@ func (m Model) View() string {
 		rightStyle = rightStyle.BorderForeground(focusBorderColor)
 	}
 
+	pageBadge := pageBadgeStyle.Render(m.current.Title())
 	helpBadge := helpBadgeStyle.Render("HELP")
-	helpRow := lipgloss.JoinHorizontal(lipgloss.Top, helpBadge, " ", help)
+	helpRow := lipgloss.JoinHorizontal(lipgloss.Top, pageBadge, " ", helpBadge, " ", help)
 	helpView := helpBoxStyle.Render(helpRow)
 
 	left := leftStyle.Render(m.Nav.View())

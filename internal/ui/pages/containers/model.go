@@ -1,7 +1,6 @@
 package containers
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -157,7 +156,6 @@ func (m *Model) View() string {
 		return m.detail.View()
 	}
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("  Containers:\n  - total: %d\n\n", len(m.core.Containers.List)))
 	b.WriteString(views.RenderContainers(m.Tbl, "  "))
 	return b.String()
 }
